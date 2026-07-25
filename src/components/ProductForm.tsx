@@ -7,7 +7,6 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
     const [isScraping, setIsScraping] = useState(false);
     const [scrapeError, setScrapeError] = useState("");
     const [isFormRevealed, setIsFormRevealed] = useState(false);
-
     const [productName, setProductName] = useState("");
     const [category, setCategory] = useState("");
     const [price, setPrice] = useState("");
@@ -17,122 +16,80 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
         if (!raw) return "";
         return new Intl.NumberFormat("id-ID").format(parseInt(raw, 10));
     };
-
-    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPrice(formatIDR(e.target.value));
-    };
+    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => setPrice(formatIDR(e.target.value));
 
     const handleScrape = async () => {
         if (!url) return;
         setIsScraping(true);
         setScrapeError("");
-
         try {
             const response = await fetch("http://localhost:8000/api/scrape", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ url }),
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }),
             });
-
-            if (!response.ok) {
-                throw new Error("Scrape blocked");
-            }
-
+            if (!response.ok) throw new Error("Scrape blocked");
             const data = await response.json();
             setProductName(data.product_name);
             setCategory(data.category);
-        } catch (err) {
-            setScrapeError("Could not auto-fetch product details. Please enter them manually.");
-        } finally {
-            setIsScraping(false);
-            setIsFormRevealed(true);
-        }
+        } catch { setScrapeError("Could not auto-fetch. Please enter details manually."); }
+        finally { setIsScraping(false); setIsFormRevealed(true); }
     };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const data = Object.fromEntries(formData.entries());
-
         const parseNumber = (val: string) => parseInt(val.replace(/\D/g, "") || "0", 10);
-
-        const payload = {
-            product_url: url,
-            product_name: data.product_name,
-            category: data.category,
-            price: parseNumber(price),
-            reason: data.reason || "",
-            urgency: data.urgency || "",
-        };
-
-        onSubmitProduct(payload);
+        onSubmitProduct({ product_url: url, product_name: data.product_name, category: data.category, price: parseNumber(price), reason: data.reason || "", urgency: data.urgency || "" });
     };
 
+    const fieldStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "6px" };
+
     return (
-        <div className="p-6 bg-white border border-gray-200 rounded-xl space-y-6 shadow-sm">
-            <div className="border-b border-gray-200 pb-4">
-                <h2 className="text-xl font-semibold text-gray-900 tracking-tight">The Object of Desire</h2>
-                <p className="text-sm text-gray-500 mt-1">Paste the link, let the AI read it, then face the price.</p>
+        <div className="card-utility" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Header */}
+            <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--color-hairline)" }}>
+                <p className="type-caption" style={{ color: "var(--color-primary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>Step 2</p>
+                <h2 className="type-display-md" style={{ margin: "0 0 4px" }}>The Object of Desire</h2>
+                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Paste the link, let the AI read it, then face the price.</p>
             </div>
 
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                        Product URL <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex mt-1 gap-2">
-                        <input
-                            type="url"
-                            required
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            disabled={isScraping}
-                            placeholder="https://shopee.co.id/..."
-                            className="w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-black focus:border-black outline-none disabled:bg-gray-100 disabled:text-gray-500"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleScrape}
-                            disabled={isScraping || !url}
-                            className="px-4 py-2 bg-gray-800 text-white rounded-md font-medium hover:bg-black transition-colors whitespace-nowrap disabled:opacity-50"
-                        >
-                            {isScraping ? "Scraping..." : "Auto-Fill"}
-                        </button>
-                    </div>
-                    {scrapeError && (
-                        <p className="mt-2 text-sm text-red-600 font-medium">{scrapeError}</p>
-                    )}
+            {/* URL + Scrape */}
+            <div style={fieldStyle}>
+                <label className="label-field">Product URL</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                    <input
+                        type="url"
+                        value={url}
+                        onChange={e => setUrl(e.target.value)}
+                        disabled={isScraping}
+                        placeholder="https://shopee.co.id/..."
+                        className="input-field"
+                        style={{ flex: 1, fontSize: "15px" }}
+                    />
+                    <button type="button" onClick={handleScrape} disabled={isScraping || !url} className="btn-dark-utility" style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
+                        {isScraping ? "Reading…" : "Auto-Fill"}
+                    </button>
                 </div>
+                {scrapeError && <p className="type-caption" style={{ color: "#880e4f" }}>{scrapeError}</p>}
+                {!isFormRevealed && (
+                    <button type="button" onClick={() => setIsFormRevealed(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}>
+                        <span className="type-caption" style={{ color: "var(--color-primary)" }}>Or enter details manually →</span>
+                    </button>
+                )}
             </div>
 
             {isFormRevealed && (
-                <form onSubmit={handleSubmit} className="pt-4 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                            Product Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="product_name"
-                            required
-                            defaultValue={productName}
-                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-black focus:border-black outline-none"
-                        />
+                <form onSubmit={handleSubmit} className="animate-fade-up" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={fieldStyle}>
+                        <label className="label-field">Product Name</label>
+                        <input type="text" name="product_name" required value={productName || ""} onChange={e => setProductName(e.target.value)} className="input-field" style={{ fontSize: "15px" }} />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                            Category <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                            name="category"
-                            required
-                            defaultValue={category}
-                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-black focus:border-black outline-none bg-white"
-                        >
-                            <option value="">Select...</option>
+                    <div style={fieldStyle}>
+                        <label className="label-field">Category</label>
+                        <select name="category" required value={category || ""} onChange={e => setCategory(e.target.value)} className="select-field" style={{ fontSize: "15px" }}>
+                            <option value="">Select…</option>
+
                             <option value="electronics">Electronics</option>
                             <option value="fashion">Fashion</option>
                             <option value="furniture">Furniture</option>
@@ -142,54 +99,30 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
                         </select>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                            Price (IDR) <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative mt-1">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">Rp</span>
-                            <input
-                                type="text"
-                                required
-                                value={price}
-                                onChange={handlePriceChange}
-                                className="w-full rounded-md border-gray-300 shadow-sm py-2 pl-10 pr-3 border focus:ring-black focus:border-black outline-none"
-                            />
+                    <div style={fieldStyle}>
+                        <label className="label-field">Price (IDR)</label>
+                        <div style={{ position: "relative" }}>
+                            <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--color-ink-muted-48)", fontSize: "15px", pointerEvents: "none" }}>Rp</span>
+                            <input type="text" required value={price} onChange={handlePriceChange} className="input-field" style={{ paddingLeft: "40px", fontSize: "15px" }} />
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                            Reason for Purchase <span className="text-gray-400 font-normal">(Optional)</span>
-                        </label>
-                        <textarea
-                            name="reason"
-                            rows={3}
-                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-black focus:border-black outline-none resize-none"
-                            placeholder="Why this? (Leave empty and the AI will judge based on category)"
-                        />
+                    <div style={fieldStyle}>
+                        <label className="label-field">Why do you want this? <span style={{ fontWeight: 400, color: "var(--color-ink-muted-48)" }}>(Optional)</span></label>
+                        <textarea name="reason" rows={3} className="input-field" style={{ resize: "none", fontSize: "15px" }} placeholder="Be honest. The AI knows when you're lying." />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                            Urgency <span className="text-gray-400 font-normal">(Optional)</span>
-                        </label>
-                        <select
-                            name="urgency"
-                            defaultValue=""
-                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-black focus:border-black outline-none bg-white"
-                        >
-                            <option value="">Select...</option>
+                    <div style={fieldStyle}>
+                        <label className="label-field">Urgency <span style={{ fontWeight: 400, color: "var(--color-ink-muted-48)" }}>(Optional)</span></label>
+                        <select name="urgency" defaultValue="" className="select-field" style={{ fontSize: "15px" }}>
+                            <option value="">Select…</option>
                             <option value="immediate_need">Immediate Need</option>
                             <option value="can_wait">Can Wait</option>
                         </select>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="w-full mt-4 bg-blue-600 text-white p-3 rounded-md font-semibold hover:bg-blue-700 transition-colors"
-                    >
-                        Run Financial Analysis
+                    <button type="submit" className="btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "4px" }}>
+                        Submit for Judgment
                     </button>
                 </form>
             )}
