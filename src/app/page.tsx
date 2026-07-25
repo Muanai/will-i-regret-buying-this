@@ -16,8 +16,6 @@ export default function Dashboard() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [isProfileLocked, setIsProfileLocked] = useState(false);
   const [existingProfile, setExistingProfile] = useState<any>(null);
-  
-  // Workflow states
   const [productData, setProductData] = useState<any>(null);
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
   const [analysisData, setAnalysisData] = useState<any>(null);
@@ -27,32 +25,28 @@ export default function Dashboard() {
   useEffect(() => {
     if (isSignedIn && user?.id) {
       fetch(`http://localhost:8000/api/profile/${user.id}`)
-        .then(res => {
-          if (res.ok) return res.json();
-          throw new Error("Not found");
-        })
-        .then(data => {
-          setExistingProfile(data);
-          // Auto-lock if data exists, or let them see the form pre-filled?
-          // Let's keep it unlocked but pre-filled so they can update their savings.
-        })
-        .catch(() => {
-          // No profile yet, totally fine.
-        });
+        .then(res => { if (res.ok) return res.json(); throw new Error("Not found"); })
+        .then(data => setExistingProfile(data))
+        .catch(() => {});
     }
   }, [isSignedIn, user?.id]);
 
   if (!isLoaded) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500 font-medium tracking-widest uppercase">Loading Identity...</div>;
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-canvas-parchment)" }}>
+        <p style={{ color: "var(--color-ink-muted-48)", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading…</p>
+      </div>
+    );
   }
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-sans px-4 text-center">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Will I Regret Buying This?</h1>
-        <p className="text-lg text-gray-600 mb-8 max-w-md">The AI that protects your wealth from your own impulses. Identify yourself to face the oracle.</p>
+      <div style={{ minHeight: "100vh", background: "var(--color-surface-black)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 24px", textAlign: "center" }}>
+        <p style={{ color: "var(--color-primary-on-dark)", fontSize: "14px", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "20px" }}>Financial Intelligence</p>
+        <h1 className="type-display-lg" style={{ color: "var(--color-on-dark)", maxWidth: "600px", marginBottom: "16px" }}>Will I Regret Buying This?</h1>
+        <p className="type-lead" style={{ color: "var(--color-body-muted)", maxWidth: "480px", marginBottom: "40px" }}>The AI that protects your wealth from your own impulses.</p>
         <SignInButton mode="modal">
-          <button className="px-8 py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-lg uppercase tracking-wider">
+          <button className="btn-primary" style={{ fontSize: "18px", fontWeight: 300, padding: "14px 32px" }}>
             Sign In to Face Reality
           </button>
         </SignInButton>
@@ -63,92 +57,102 @@ export default function Dashboard() {
   const handleProfileSubmit = async (data: any) => {
     try {
       const payload = { ...data, user_id: user.id };
-      const res = await fetch("http://localhost:8000/api/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to lock profile");
+      const res = await fetch("http://localhost:8000/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error("Failed");
       setIsProfileLocked(true);
       setError("");
-    } catch (err) {
-      setError("Failed to lock profile. Is the backend breathing?");
-    }
+    } catch { setError("Failed to lock profile. Is the backend breathing?"); }
   };
 
   const runAnalysis = async (product: any, history: Message[]) => {
     setIsAnalyzing(true);
     setError("");
     try {
-      const payload = { 
-        ...product, 
-        user_id: user.id,
-        chat_history: history 
-      };
-      const res = await fetch("http://localhost:8000/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to analyze purchase");
-      
+      const payload = { ...product, user_id: user.id, chat_history: history };
+      const res = await fetch("http://localhost:8000/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error("Failed");
       const result = await res.json();
-      
       if (result.type === "question") {
         setChatHistory(prev => [...prev, { role: "ai", content: result.message }]);
       } else if (result.type === "verdict") {
         setAnalysisData(result);
-        setChatHistory(prev => [...prev, { role: "ai", content: `[VONIS]: ${result.purchase_summary}` }]);
+        setChatHistory(prev => [...prev, { role: "ai", content: `Verdict delivered: ${result.purchase_summary}` }]);
       }
-    } catch (err) {
-      setError("The AI refused to answer. Check your backend terminal.");
-    } finally {
-      setIsAnalyzing(false);
-    }
+    } catch { setError("The AI refused to answer. Check your backend terminal."); }
+    finally { setIsAnalyzing(false); }
   };
 
-  const handleProductSubmit = (data: any) => {
-    setProductData(data);
-    setChatHistory([]);
-    setAnalysisData(null);
-    runAnalysis(data, []);
-  };
-
+  const handleProductSubmit = (data: any) => { setProductData(data); setChatHistory([]); setAnalysisData(null); runAnalysis(data, []); };
   const handleSendMessage = (message: string) => {
     if (!productData) return;
     const newHistory: Message[] = [...chatHistory, { role: "user", content: message }];
     setChatHistory(newHistory);
     runAnalysis(productData, newHistory);
   };
-
-  const resetAnalysis = () => {
-    setProductData(null);
-    setChatHistory([]);
-    setAnalysisData(null);
-  };
+  const resetAnalysis = () => { setProductData(null); setChatHistory([]); setAnalysisData(null); };
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-[1400px] mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <div className="text-left">
-            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Will I Regret Buying This?</h1>
-            <p className="mt-2 text-lg text-gray-600">The AI that protects your wealth from your own impulses.</p>
-          </div>
-          <div className="p-1 bg-white border border-gray-200 rounded-full shadow-sm">
-            <UserButton />
+    <>
+      {/* GLOBAL NAV */}
+      <nav className="nav-global">
+        <span className="type-nav-link" style={{ color: "var(--color-body-muted)" }}>Will I Regret Buying This?</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {user?.firstName && (
+            <span className="type-nav-link" style={{ color: "var(--color-body-muted)" }}>{user.firstName}</span>
+          )}
+          <UserButton />
+        </div>
+      </nav>
+
+      {/* MAIN CONTENT — full-height panel layout */}
+      <main style={{
+        height: "calc(100vh - 44px - 36px)",
+        background: "var(--color-canvas-parchment)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}>
+
+        {/* TICKER STRIP */}
+        <div style={{ background: "var(--color-surface-tile-1)", overflow: "hidden", height: "36px", display: "flex", alignItems: "center", borderBottom: "1px solid #3a3a3c", flexShrink: 0 }}>
+          <div className="ticker-track">
+            {/* Copy 1 — visible */}
+            <span className="ticker-segment">
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Will I Regret Buying This? &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;Your financial conscience, engineered with precision &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Stop impulse-buying. Start being ruthless with your money &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;AI Purchase Copilot &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Because "treat yourself" has a price &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;Think twice. The AI never lies &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Your wallet called. It wants a word &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;
+            </span>
+            {/* Copy 2 — exact duplicate for seamless loop */}
+            <span className="ticker-segment" aria-hidden="true">
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Will I Regret Buying This? &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;Your financial conscience, engineered with precision &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Stop impulse-buying. Start being ruthless with your money &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;AI Purchase Copilot &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Because "treat yourself" has a price &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;Think twice. The AI never lies &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-primary-on-dark)" }}>◆</span> &nbsp;&nbsp;Your wallet called. It wants a word &nbsp;&nbsp;&nbsp;
+              <span style={{ color: "var(--color-ink-muted-48)" }}>—</span> &nbsp;&nbsp;&nbsp;
+            </span>
           </div>
         </div>
-        
+
+        {/* ERROR BANNER */}
         {error && (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-md font-medium text-center max-w-3xl">
+          <div style={{ flexShrink: 0, margin: "12px 24px 0", padding: "12px 18px", background: "#fce4ec", border: "1px solid #e57373", borderRadius: "var(--radius-md)", color: "#880e4f", fontSize: "14px", fontWeight: 500 }}>
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-6 items-start w-full">
-          {/* Left Column: Form (Profile or Product) */}
-          <div className="col-span-1">
+        {/* 3-PANEL WORKSPACE */}
+        <div style={{ flex: 1, display: "flex", overflow: "hidden", gap: "1px", background: "var(--color-hairline)" }}>
+
+          {/* LEFT SIDEBAR — Form (fixed 380px) */}
+          <div style={{ width: "380px", flexShrink: 0, background: "var(--color-canvas)", overflowY: "auto", padding: "28px 28px" }}>
             {!isProfileLocked ? (
               <ProfileForm onComplete={handleProfileSubmit} initialData={existingProfile} />
             ) : (
@@ -156,29 +160,26 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Middle Column: Chat Interface */}
-          <div className="col-span-1">
-             <ChatInterface 
-                messages={chatHistory} 
-                onSendMessage={handleSendMessage}
-                isAnalyzing={isAnalyzing}
-             />
+          {/* CENTER — Chat (dominant, takes all remaining space) */}
+          <div style={{ flex: 1, background: "var(--color-canvas-parchment)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <ChatInterface messages={chatHistory} onSendMessage={handleSendMessage} isAnalyzing={isAnalyzing} />
           </div>
 
-          {/* Right Column: Verdict Dashboard */}
-          <div className="col-span-1">
-            {analysisData ? (
+          {/* RIGHT SIDEBAR — Verdict (slides in only when result exists) */}
+          <div style={{
+            width: analysisData ? "340px" : "0px",
+            flexShrink: 0,
+            overflow: "hidden",
+            background: "var(--color-canvas)",
+            transition: "width 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}>
+            <div style={{ width: "340px", height: "100%", overflowY: "auto", padding: "24px 20px" }}>
               <AnalysisResult data={analysisData} onReset={resetAnalysis} />
-            ) : (
-              <div className="h-[600px] flex flex-col items-center justify-center text-gray-400 p-8 border border-dashed border-gray-300 rounded-xl bg-white">
-                <svg className="w-12 h-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
-                <p className="text-center font-medium">The Verdict Awaits</p>
-                <p className="text-sm text-center mt-2">The AI has not yet passed judgment on your purchase.</p>
-              </div>
-            )}
+            </div>
           </div>
+
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
