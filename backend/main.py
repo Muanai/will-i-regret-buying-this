@@ -144,15 +144,19 @@ class ProfileCreateRequest(BaseModel):
 @app.post("/api/profile")
 def save_profile(profile: ProfileCreateRequest):
     with Session(engine) as session:
-        # Periksa apakah profil sudah ada untuk menghindari duplikasi
         existing_user = session.get(UserProfile, profile.user_id)
+        
+        profile_data = profile.model_dump() if hasattr(profile, "model_dump") else profile.dict()
+        
+        profile_id = profile_data.pop("user_id")
+        profile_data["id"] = profile_id
+        
         if existing_user:
-            # Update data jika sudah ada
-            for key, value in profile.dict().items():
+            for key, value in profile_data.items():
                 setattr(existing_user, key, value)
             db_user = existing_user
         else:
-            db_user = UserProfile(**profile.dict())
+            db_user = UserProfile(**profile_data)
             session.add(db_user)
             
         session.commit()
