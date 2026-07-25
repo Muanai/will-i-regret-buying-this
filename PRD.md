@@ -34,22 +34,28 @@ Many people buy things because of a discount, a trend, or a feeling. They do not
 
 ### Solution
 
-The app asks the User for basic financial data (the Profile) and details about an item (the Product). The app then produces an Analysis. The Analysis has four parts: a summary, a financial impact, a behavioral insight, and a recommendation.
+The app asks the User to set up a financial Profile (saved to their account). When they want to buy something, they paste a Product URL. The app scrapes the product details, evaluates it against their Profile, and produces an Analysis. The Analysis has four parts: a summary, a financial impact, a behavioral insight, and a recommendation.
 
 ---
 
 ## 2. Target User
 
-Primary target: people aged 18–30 in an early career stage (student, fresh graduate, young professional). This group buys many items online and has little structured decision support at the point of purchase.
+Primary target: Indonesian youth aged 18–30 in an early career stage (student, fresh graduate, young professional). This group frequently shops on e-commerce platforms like Shopee and has little structured decision support at the point of purchase.
 
 ---
 
 ## 3. Core User Flow
 
 ```
-User enters Profile
+User signs up / logs in
         ↓
-User enters Product
+User enters Profile (saved to account, done once)
+        ↓
+User pastes Product URL
+        ↓
+Backend scrapes Product Name & Category (e.g., from Shopee)
+        ↓
+User confirms/edits Product details and enters Price
         ↓
 Backend calculates financial ratios
         ↓
@@ -64,15 +70,15 @@ Frontend displays Analysis
 
 ## 4. Feature Scope
 
-Build exactly these three features. Do not add other features.
+Build exactly these features. Do not add other features.
 
-### Feature 1 — Profile Form
+### Feature 1 — Authentication & Profile Form
 
-The Frontend must show a form. The form collects the fields in Section 5. The Frontend must mark each field as required or optional, exactly as Section 5 states.
+The Frontend must require the user to log in. Once logged in, they fill out their Profile. The profile is saved to the database. They do not need to fill it out again for future purchases.
 
-### Feature 2 — Product Form
+### Feature 2 — Product Form & Scraper
 
-The Frontend must show a form. The form collects the fields in Section 6.
+The Product form asks for a URL first. The Backend attempts to scrape the product name and category from the URL (optimized for Shopee and Indonesian e-commerce). The User can edit these scraped values. The User must manually enter the Price.
 
 ### Feature 3 — Analysis Engine
 
@@ -80,12 +86,14 @@ The Backend must:
 1. Calculate the ratios in Section 7.
 2. Build the prompt in Section 8.
 3. Call the LLM with that prompt.
-4. Save the Profile, the Product, and the Analysis to the database. See Section 10.
+4. Save the Analysis to the database linked to the User.
 5. Return the LLM's JSON response to the Frontend.
 
 ---
 
 ## 5. Profile Fields
+
+Because this is filled once per account, all critical calculation fields remain mandatory.
 
 | Field | Type | Required | Default / Rule |
 |---|---|---|---|
@@ -102,14 +110,16 @@ The Backend must:
 
 ## 6. Product Fields
 
+To minimize typing for each purchase, typed fields are optional except Price.
+
 | Field | Type | Required | Default / Rule |
 |---|---|---|---|
-| `product_name` | text | Yes | — |
-| `category` | enum: `electronics`, `fashion`, `furniture`, `travel`, `education`, `other` | Yes | Use an enum, not free text. This keeps the LLM's input consistent. |
-| `price` | number | Yes | — |
-| `reason` | text | Yes | If the text has fewer than 5 words, ask the User for more detail before they submit the form. |
-| `product_url` | text | No | The app does not fetch or read this URL. |
-| `urgency` | enum: `immediate_need`, `can_wait` | No | Skip this field first if you run out of time. |
+| `product_url` | text (URL) | Yes | Used to scrape product details. |
+| `product_name` | text | Yes | Auto-filled by scraper. User can edit. |
+| `category` | enum: `electronics`, `fashion`, `furniture`, `travel`, `education`, `other` | Yes | Auto-filled by LLM processing the scraped data. User can edit. |
+| `price` | number | Yes | User must type this manually (scraping prices is unreliable). |
+| `reason` | text | No | Optional. If empty, the LLM will skip behavioral insight. |
+| `urgency` | enum: `immediate_need`, `can_wait` | No | Optional dropdown. |
 
 ---
 
@@ -147,7 +157,7 @@ pre-calculated financial ratios. Do three things:
 1. Confirm or adjust the suggested risk tier, using the user's goal and
    occupation status as context.
 2. State the likely psychological driver behind the purchase, based on the
-   user's stated reason.
+   user's stated reason (if provided, else make a general assumption based on category).
 3. Give one practical recommendation.
 
 Reply with only valid JSON. Do not use markdown fences. Do not add comments.
@@ -201,7 +211,7 @@ Handle each case exactly as stated.
 |---|---|
 | `monthly_income = 0` | Skip `price_to_income_ratio`. Base `suggested_risk_tier` on `price_to_savings_ratio` only. |
 | `current_savings = 0` | Continue normally. Add a note inside `financial_impact.reason`: "Limited savings data available." |
-| `reason` has fewer than 5 words | Block form submission. Show: "Please describe your reason in a bit more detail." |
+| Scraping fails | If Shopee or other sites block the scraper, show an error: "Could not auto-fetch product details. Please enter them manually." and allow the user to type the name. |
 | `price` > 12 × `monthly_income` | Continue normally. In `recommendation.action`, suggest an installment or savings plan, not a generic "wait 30 days" message. |
 
 ---
@@ -212,14 +222,13 @@ Handle each case exactly as stated.
 
 ### Database Schema
 
-Use one table. Do not split this into multiple tables for the MVP.
+Use two tables.
 
-Table: `analyses`
+Table: `users` (managed by Clerk, but store a profile record here)
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | uuid, primary key | |
-| `created_at` | timestamp | set automatically |
+| `id` | uuid, primary key | Links to Auth provider (e.g., Clerk user_id) |
 | `age` | integer | |
 | `occupation_status` | text | |
 | `monthly_income` | numeric | |
@@ -227,11 +236,19 @@ Table: `analyses`
 | `current_savings` | numeric | |
 | `financial_goal` | text | |
 | `risk_tolerance` | text, nullable | |
+
+Table: `analyses`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid, primary key | |
+| `user_id` | uuid | Foreign key to `users` |
+| `created_at` | timestamp | set automatically |
 | `product_name` | text | |
 | `category` | text | |
 | `price` | numeric | |
-| `reason` | text | |
-| `product_url` | text, nullable | |
+| `reason` | text, nullable | |
+| `product_url` | text | |
 | `urgency` | text, nullable | |
 | `suggested_risk_tier` | text | from Section 7 |
 | `purchase_summary` | text | from the LLM response |
@@ -241,44 +258,39 @@ Table: `analyses`
 | `recommendation_action` | text | from the LLM response |
 | `recommendation_alternative` | text | from the LLM response |
 
-The Frontend does not read this table. The table exists to persist each analysis, as the hackathon rules require.
+
+### `POST /api/scrape`
+Takes a URL. Attempts to fetch basic HTML/meta tags and uses Gemini to extract the product name and map it to a category. 
+
+Request body:
+```json
+{ "url": "string" }
+```
+Response body:
+```json
+{ "product_name": "string", "category": "string" }
+```
 
 ### `POST /api/analyze`
 
-Send the full Profile and Product in one request. No separate profile-creation endpoint is required.
+Send the Product details. The Backend fetches the Profile from the `users` table based on the authenticated user.
 
 Request body:
 
 ```json
 {
-  "profile": {
-    "name": "string, optional",
-    "age": "number",
-    "occupation_status": "student | fresh_graduate | employee | freelancer",
-    "monthly_income": "number",
-    "monthly_expense": "number",
-    "current_savings": "number",
-    "financial_goal": "emergency_fund | debt_free | saving_for_something | start_investing | no_specific_goal",
-    "risk_tolerance": "low | medium | high, optional"
-  },
   "product": {
     "product_name": "string",
     "category": "electronics | fashion | furniture | travel | education | other",
     "price": "number",
-    "reason": "string",
-    "product_url": "string, optional",
+    "reason": "string, optional",
+    "product_url": "string",
     "urgency": "immediate_need | can_wait, optional"
   }
 }
 ```
 
 Response body: the exact JSON schema from Section 8.
-
-Backend steps for this endpoint:
-1. Calculate the ratios (Section 7).
-2. Build the prompt and call the LLM (Section 8).
-3. Insert one row into `analyses` with the Profile fields, the Product fields, and the LLM's Analysis fields.
-4. Return the Analysis JSON to the Frontend.
 
 ---
 
@@ -290,10 +302,12 @@ Backend steps for this endpoint:
 | Backend | Python, FastAPI | Render (Web Service) |
 | Database | Postgres | Neon |
 | ORM | SQLModel | — |
+| Auth | Clerk | — |
 | LLM | Gemini API, or any free provider with strict JSON output | — |
 
 Reasons for these choices:
 - Next.js deploys on Vercel with no extra configuration.
+- Clerk provides extremely fast, out-of-the-box authentication for Next.js.
 - FastAPI deploys on Render as a standard web service.
 - SQLModel connects to Neon with one connection string. It needs less setup than a full ORM.
 - Neon is a managed external database. It satisfies the hackathon's database requirement and needs no server management.
@@ -313,10 +327,10 @@ CORS_ORIGIN       # the Vercel Frontend URL, set on the Backend
 
 ## 12. UI Screens
 
-Build exactly three screens.
+Build exactly three screens. All monetary values (`price`, `monthly_income`, `monthly_expense`, `current_savings`) must be formatted in Indonesian Rupiah (IDR), e.g., "Rp 15.000.000", to ensure consistency and readability for the target audience.
 
-1. **Profile Setup** — one form, with the fields from Section 5. Mark required fields clearly.
-2. **Product Input** — one form, with the fields from Section 6. Use a multi-line text area for `reason`.
+1. **Profile Setup** — one form, with the fields from Section 5. Mark required fields clearly. Use IDR formatting for number inputs where possible.
+2. **Product Input** — one form, with the fields from Section 6. The form starts with the URL input. Use a multi-line text area for `reason`.
 3. **Decision Report** — shows the Analysis. Use a colored badge for `risk_tier` (green = Low, yellow = Medium, red = High). Show `purchase_summary`, `behavioral_insight`, and `recommendation`. Add two buttons: "Check another product" and "Edit profile."
 
 ---
