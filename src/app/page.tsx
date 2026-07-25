@@ -1,6 +1,25 @@
+"use client";
+
+import { useState } from "react";
 import { Show, SignInButton, UserButton } from "@clerk/nextjs";
+import ProfileForm from "@/components/ProfileForm";
+import ProductForm from "@/components/ProductForm";
 
 export default function Home() {
+  const [profileData, setProfileData] = useState<any>(null);
+  const [isProfileLocked, setIsProfileLocked] = useState(false);
+  const [productData, setProductData] = useState<any>(null);
+
+  const handleProfileComplete = (data: any) => {
+    setProfileData(data);
+    setIsProfileLocked(true);
+  };
+
+  const handleProductSubmit = (data: any) => {
+    setProductData(data);
+    console.log("Ready for Backend API:", { profile: profileData, product: data });
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 text-gray-900 p-4 md:p-8">
       <div className="max-w-2xl mx-auto space-y-8">
@@ -33,11 +52,29 @@ export default function Home() {
 
         <Show when="signed-in">
           <div className="space-y-6">
-            <div className="p-6 bg-white border border-gray-200 rounded-xl shadow-sm text-center">
-              <p className="text-gray-600 font-medium">
-                You are logged in. The Profile and Product forms will live here.
-              </p>
-            </div>
+            {!isProfileLocked ? (
+              <ProfileForm onComplete={handleProfileComplete} initialData={profileData} />
+            ) : (
+              <>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex justify-between items-center text-sm">
+                  <span className="text-green-800 font-medium">Financial reality verified.</span>
+                  <button 
+                    onClick={() => setIsProfileLocked(false)}
+                    className="text-green-700 hover:text-green-900 underline font-semibold"
+                  >
+                    Edit Profile
+                  </button>
+                </div>
+
+                {!productData ? (
+                  <ProductForm onSubmitProduct={handleProductSubmit} />
+                ) : (
+                  <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 animate-pulse text-center font-medium">
+                    Analysis in progress... (Awaiting FastAPI Backend)
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </Show>
       </div>
