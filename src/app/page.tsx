@@ -24,7 +24,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (isSignedIn && user?.id) {
-      fetch(`http://localhost:8000/api/profile/${user.id}`)
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      fetch(`${API_URL}/api/profile/${user.id}`)
         .then(res => { if (res.ok) return res.json(); throw new Error("Not found"); })
         .then(data => setExistingProfile(data))
         .catch(() => {});
@@ -57,7 +58,8 @@ export default function Dashboard() {
   const handleProfileSubmit = async (data: any) => {
     try {
       const payload = { ...data, user_id: user.id };
-      const res = await fetch("http://localhost:8000/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/profile`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error("Failed");
       setIsProfileLocked(true);
       setError("");
@@ -69,7 +71,8 @@ export default function Dashboard() {
     setError("");
     try {
       const payload = { ...product, user_id: user.id, chat_history: history };
-      const res = await fetch("http://localhost:8000/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error("Failed");
       const result = await res.json();
       if (result.type === "question") {

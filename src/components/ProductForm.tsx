@@ -23,7 +23,8 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
         setIsScraping(true);
         setScrapeError("");
         try {
-            const response = await fetch("http://localhost:8000/api/scrape", {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const response = await fetch(`${API_URL}/api/scrape`, {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }),
             });
             if (!response.ok) throw new Error("Scrape blocked");
