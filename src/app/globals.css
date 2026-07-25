@@ -1,3 +1,416 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* ============================================
+   TICKER / MARQUEE
+   ============================================ */
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ticker-scroll 40s linear infinite;
+}
+
+.ticker-segment {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--color-body-muted);
+  text-transform: uppercase;
+}
+
+/* ============================================
+   CHAT PANEL LIVE INDICATOR
+   ============================================ */
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  70%  { transform: scale(2.4); opacity: 0;   }
+  100% { transform: scale(2.4); opacity: 0;   }
+}
+
+.chat-pulse-ring {
+  position: absolute;
+  top: 0; left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary-on-dark);
+  animation: pulse-ring 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+
+
+/* ============================================
+   APPLE DESIGN SYSTEM — DESIGN TOKEN LAYER
+   Source: DESIGN-apple.md
+   ============================================ */
+
+:root {
+  /* Brand & Accent */
+  --color-primary: #0066cc;
+  --color-primary-focus: #0071e3;
+  --color-primary-on-dark: #2997ff;
+
+  /* Text */
+  --color-ink: #1d1d1f;
+  --color-body-muted: #cccccc;
+  --color-ink-muted-80: #333333;
+  --color-ink-muted-48: #7a7a7a;
+
+  /* Surface */
+  --color-canvas: #ffffff;
+  --color-canvas-parchment: #f5f5f7;
+  --color-surface-pearl: #fafafc;
+  --color-surface-tile-1: #272729;
+  --color-surface-tile-2: #2a2a2c;
+  --color-surface-black: #000000;
+  --color-on-dark: #ffffff;
+
+  /* Hairlines */
+  --color-hairline: #e0e0e0;
+  --color-divider-soft: #f0f0f0;
+
+  /* Spacing */
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 17px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  --spacing-section: 80px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 18px;
+  --radius-pill: 9999px;
+}
+
+/* ============================================
+   BASE LAYER
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-canvas-parchment);
+  color: var(--color-ink);
+  font-family: "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+}
+
+/* ============================================
+   TYPOGRAPHY UTILITIES
+   ============================================ */
+
+.type-hero {
+  font-family: "SF Pro Display", system-ui, -apple-system, "Inter", sans-serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: -0.28px;
+}
+
+.type-display-lg {
+  font-family: "SF Pro Display", system-ui, -apple-system, "Inter", sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.type-display-md {
+  font-family: "SF Pro Display", system-ui, -apple-system, "Inter", sans-serif;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+}
+
+.type-tagline {
+  font-family: "SF Pro Display", system-ui, -apple-system, "Inter", sans-serif;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.19;
+  letter-spacing: 0.231px;
+}
+
+.type-lead {
+  font-family: "SF Pro Display", system-ui, -apple-system, "Inter", sans-serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: 0.196px;
+}
+
+.type-caption {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.43;
+  letter-spacing: -0.224px;
+}
+
+.type-caption-strong {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.29;
+  letter-spacing: -0.224px;
+}
+
+.type-nav-link {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.0;
+  letter-spacing: -0.12px;
+}
+
+/* ============================================
+   COMPONENT: GLOBAL NAV
+   ============================================ */
+.nav-global {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  color: var(--color-on-dark);
+}
+
+/* ============================================
+   COMPONENT: BUTTONS
+   ============================================ */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary);
+  color: var(--color-canvas);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.374px;
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  text-decoration: none;
+  line-height: 1;
+  white-space: nowrap;
+}
+.btn-primary:hover { background-color: var(--color-primary-focus); }
+.btn-primary:active { transform: scale(0.95); }
+.btn-primary:focus-visible { outline: 2px solid var(--color-primary-focus); outline-offset: 2px; }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.374px;
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  line-height: 1;
+  white-space: nowrap;
+}
+.btn-ghost:hover { background-color: rgba(0, 102, 204, 0.06); }
+.btn-ghost:active { transform: scale(0.95); }
+
+.btn-dark-utility {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-ink);
+  color: var(--color-on-dark);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.224px;
+  padding: 8px 15px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.btn-dark-utility:active { transform: scale(0.95); }
+
+/* ============================================
+   COMPONENT: CARDS / UTILITY CARDS
+   ============================================ */
+
+.card-utility {
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+/* ============================================
+   COMPONENT: FORM INPUTS
+   ============================================ */
+
+.input-field {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.374px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-hairline);
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+.input-field:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
+}
+.input-field:disabled {
+  background-color: var(--color-canvas-parchment);
+  color: var(--color-ink-muted-48);
+  cursor: not-allowed;
+}
+
+.select-field {
+  appearance: none;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.374px;
+  padding: 12px 40px 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-hairline);
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%237a7a7a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+}
+.select-field:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
+}
+
+.label-field {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.224px;
+  color: var(--color-ink-muted-80);
+  margin-bottom: 6px;
+}
+
+/* ============================================
+   SECTION TILE SYSTEM
+   ============================================ */
+
+.tile-light {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  padding: var(--spacing-xxl) var(--spacing-lg);
+}
+
+.tile-parchment {
+  background-color: var(--color-canvas-parchment);
+  color: var(--color-ink);
+  padding: var(--spacing-xxl) var(--spacing-lg);
+}
+
+.tile-dark {
+  background-color: var(--color-surface-tile-1);
+  color: var(--color-on-dark);
+  padding: var(--spacing-xxl) var(--spacing-lg);
+}
+
+/* ============================================
+   CHAT BUBBLE SYSTEM
+   ============================================ */
+.bubble-ai {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-sm);
+  padding: 14px 18px;
+  max-width: 85%;
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: -0.2px;
+}
+
+.bubble-user {
+  background-color: var(--color-primary);
+  color: var(--color-canvas);
+  border-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-sm);
+  padding: 14px 18px;
+  max-width: 85%;
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: -0.2px;
+}
+
+/* Risk tier badges */
+.risk-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.risk-low    { background: #e8f5e9; color: #1b5e20; }
+.risk-medium { background: #fff8e1; color: #e65100; }
+.risk-high   { background: #fce4ec; color: #880e4f; }
+.risk-catastrophic { background: #b71c1c; color: #ffffff; }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);  }
+}
+.animate-fade-up {
+  animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes pulse-dot {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40%           { transform: scale(1);   opacity: 1;   }
+}
+.dot-pulse { animation: pulse-dot 1.2s ease-in-out infinite; }
+.dot-pulse-2 { animation: pulse-dot 1.2s ease-in-out 0.2s infinite; }
+.dot-pulse-3 { animation: pulse-dot 1.2s ease-in-out 0.4s infinite; }
