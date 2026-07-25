@@ -188,12 +188,34 @@ export default function ProfileForm({
                 </div>
             </div>
 
-            <button
-                type="submit"
-                className="w-full bg-black text-white p-3 rounded-md font-semibold hover:bg-gray-800 transition-colors"
-            >
-                Lock Profile
-            </button>
+            <div className="flex gap-4">
+                {!initialData && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setIncome(formatIDR(15000000));
+                            setExpense(formatIDR(5000000));
+                            setSavings(formatIDR(20000000));
+                            const form = document.querySelector('form') as HTMLFormElement;
+                            if (form) {
+                                (form.elements.namedItem('name') as HTMLInputElement).value = "Test User";
+                                (form.elements.namedItem('age') as HTMLInputElement).value = "20";
+                                (form.elements.namedItem('occupation_status') as HTMLSelectElement).value = "student";
+                                (form.elements.namedItem('financial_goal') as HTMLSelectElement).value = "start_investing";
+                            }
+                        }}
+                        className="w-1/3 bg-gray-200 text-gray-700 p-3 rounded-md font-semibold hover:bg-gray-300 transition-colors"
+                    >
+                        Inject Dummy
+                    </button>
+                )}
+                <button
+                    type="submit"
+                    className={`${initialData ? 'w-full' : 'w-2/3'} bg-black text-white p-3 rounded-md font-semibold hover:bg-gray-800 transition-colors`}
+                >
+                    Lock Profile
+                </button>
+            </div>
         </form>
     );
 }
