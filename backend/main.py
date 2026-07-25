@@ -162,3 +162,92 @@ def save_profile(profile: ProfileCreateRequest):
         session.commit()
         session.refresh(db_user)
         return {"status": "success", "message": "Financial reality locked in database."}
+
+class AnalyzeRequest(BaseModel):
+    user_id: str
+    product_url: str
+    product_name: str
+    category: str
+    price: float
+    reason: Optional[str] = ""
+    urgency: Optional[str] = ""
+
+@app.post("/api/analyze")
+def analyze_purchase(req: AnalyzeRequest):
+    if not os.getenv("GEMINI_API_KEY"):
+        raise HTTPException(status_code=500, detail="Missing API Key")
+
+    with Session(engine) as session:
+        user = session.get(UserProfile, req.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User profile not found. Are you a ghost?")
+
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+        disposable_income = user.monthly_income - user.monthly_expense
+        price_to_disposable_ratio = (req.price / disposable_income) * 100 if disposable_income > 0 else 999
+
+        prompt = f"""
+        Act as a ruthless, poetic, and highly analytical financial advisor. Do not sugarcoat anything. 
+        Analyze this potential purchase based on the user's harsh financial reality.
+
+        [USER FINANCIAL REALITY]
+        Age: {user.age}
+        Monthly Income: IDR {user.monthly_income}
+        Monthly Expense: IDR {user.monthly_expense}
+        Disposable Income: IDR {disposable_income}
+        Current Savings: IDR {user.current_savings}
+        Financial Goal: {user.financial_goal}
+
+        [THE OBJECT OF DESIRE]
+        Item: {req.product_name}
+        Category: {req.category}
+        Price: IDR {req.price} (This is {price_to_disposable_ratio:.1f}% of their monthly disposable income)
+        Stated Reason: {req.reason}
+        Urgency: {req.urgency}
+
+        Return ONLY a valid JSON object with this exact schema:
+        {{
+            "suggested_risk_tier": "low | medium | high | catastrophic",
+            "purchase_summary": "One punchy, poetic sentence summarizing the absurdity or validity of this purchase",
+            "financial_impact_reason": "A ruthless breakdown of how this ruins or fits their financial goal",
+            "behavioral_insight": "A skeptical psychological analysis of why they actually want this",
+            "recommendation_action": "Buy | Delay | Drop",
+            "recommendation_alternative": "A practical, cheaper alternative or a better use for this specific amount of money"
+        }}
+        """
+
+        try:
+            ai_response = client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt,
+            )
+            cleaned_response = ai_response.text.strip().removeprefix("```json").removesuffix("```").strip()
+            result = json.loads(cleaned_response)
+
+            analysis_record = AnalysisRecord(
+                user_id=user.id,
+                product_name=req.product_name,
+                category=req.category,
+                price=req.price,
+                reason=req.reason,
+                product_url=req.product_url,
+                urgency=req.urgency,
+                suggested_risk_tier=result.get("suggested_risk_tier", "high"),
+                purchase_summary=result.get("purchase_summary", ""),
+                financial_impact_risk_tier=result.get("suggested_risk_tier", "high"),
+                financial_impact_reason=result.get("financial_impact_reason", ""),
+                behavioral_insight=result.get("behavioral_insight", ""),
+                recommendation_action=result.get("recommendation_action", "Drop"),
+                recommendation_alternative=result.get("recommendation_alternative", "")
+            )
+
+            session.add(analysis_record)
+            session.commit()
+            session.refresh(analysis_record)
+
+            return result
+
+        except Exception as e:
+            print(f"Analyze Error: {repr(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
