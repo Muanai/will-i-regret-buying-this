@@ -1,82 +1,183 @@
 "use client";
 
-import { useState } from "react";
-import { Show, SignInButton, UserButton } from "@clerk/nextjs";
+import { useState, useEffect } from "react";
+import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import ProfileForm from "@/components/ProfileForm";
 import ProductForm from "@/components/ProductForm";
+import AnalysisResult from "@/components/AnalysisResult";
+import ChatInterface from "@/components/ChatInterface";
 
-export default function Home() {
-  const [profileData, setProfileData] = useState<any>(null);
+interface Message {
+  role: "user" | "ai";
+  content: string;
+}
+
+export default function Dashboard() {
+  const { isLoaded, isSignedIn, user } = useUser();
   const [isProfileLocked, setIsProfileLocked] = useState(false);
+  const [existingProfile, setExistingProfile] = useState<any>(null);
+  
+  // Workflow states
   const [productData, setProductData] = useState<any>(null);
+  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleProfileComplete = (data: any) => {
-    setProfileData(data);
-    setIsProfileLocked(true);
+  useEffect(() => {
+    if (isSignedIn && user?.id) {
+      fetch(`http://localhost:8000/api/profile/${user.id}`)
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error("Not found");
+        })
+        .then(data => {
+          setExistingProfile(data);
+          // Auto-lock if data exists, or let them see the form pre-filled?
+          // Let's keep it unlocked but pre-filled so they can update their savings.
+        })
+        .catch(() => {
+          // No profile yet, totally fine.
+        });
+    }
+  }, [isSignedIn, user?.id]);
+
+  if (!isLoaded) {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500 font-medium tracking-widest uppercase">Loading Identity...</div>;
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-sans px-4 text-center">
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Will I Regret Buying This?</h1>
+        <p className="text-lg text-gray-600 mb-8 max-w-md">The AI that protects your wealth from your own impulses. Identify yourself to face the oracle.</p>
+        <SignInButton mode="modal">
+          <button className="px-8 py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-lg uppercase tracking-wider">
+            Sign In to Face Reality
+          </button>
+        </SignInButton>
+      </div>
+    );
+  }
+
+  const handleProfileSubmit = async (data: any) => {
+    try {
+      const payload = { ...data, user_id: user.id };
+      const res = await fetch("http://localhost:8000/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to lock profile");
+      setIsProfileLocked(true);
+      setError("");
+    } catch (err) {
+      setError("Failed to lock profile. Is the backend breathing?");
+    }
+  };
+
+  const runAnalysis = async (product: any, history: Message[]) => {
+    setIsAnalyzing(true);
+    setError("");
+    try {
+      const payload = { 
+        ...product, 
+        user_id: user.id,
+        chat_history: history 
+      };
+      const res = await fetch("http://localhost:8000/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to analyze purchase");
+      
+      const result = await res.json();
+      
+      if (result.type === "question") {
+        setChatHistory(prev => [...prev, { role: "ai", content: result.message }]);
+      } else if (result.type === "verdict") {
+        setAnalysisData(result);
+        setChatHistory(prev => [...prev, { role: "ai", content: `[VONIS]: ${result.purchase_summary}` }]);
+      }
+    } catch (err) {
+      setError("The AI refused to answer. Check your backend terminal.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleProductSubmit = (data: any) => {
     setProductData(data);
-    console.log("Ready for Backend API:", { profile: profileData, product: data });
+    setChatHistory([]);
+    setAnalysisData(null);
+    runAnalysis(data, []);
+  };
+
+  const handleSendMessage = (message: string) => {
+    if (!productData) return;
+    const newHistory: Message[] = [...chatHistory, { role: "user", content: message }];
+    setChatHistory(newHistory);
+    runAnalysis(productData, newHistory);
+  };
+
+  const resetAnalysis = () => {
+    setProductData(null);
+    setChatHistory([]);
+    setAnalysisData(null);
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 p-4 md:p-8">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <header className="flex justify-between items-center py-6 border-b border-gray-200">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              Will I Regret Buying This?
-            </h1>
-            <p className="text-gray-500 text-xs uppercase tracking-widest mt-1">
-              AI Purchase Decision Copilot
-            </p>
+    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-[1400px] mx-auto space-y-8">
+        <div className="flex justify-between items-center">
+          <div className="text-left">
+            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Will I Regret Buying This?</h1>
+            <p className="mt-2 text-lg text-gray-600">The AI that protects your wealth from your own impulses.</p>
           </div>
-          <Show when="signed-in">
+          <div className="p-1 bg-white border border-gray-200 rounded-full shadow-sm">
             <UserButton />
-          </Show>
-        </header>
-
-        <Show when="signed-out">
-          <div className="flex flex-col items-center justify-center py-20 space-y-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-700">
-              Stop impulse buying. Check your finances first.
-            </h2>
-            <SignInButton mode="modal">
-              <button className="bg-black text-white px-8 py-3 rounded-md font-semibold hover:bg-gray-800 transition-colors">
-                Sign In to Start
-              </button>
-            </SignInButton>
           </div>
-        </Show>
+        </div>
+        
+        {error && (
+          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-md font-medium text-center max-w-3xl">
+            {error}
+          </div>
+        )}
 
-        <Show when="signed-in">
-          <div className="space-y-6">
+        <div className="grid grid-cols-3 gap-6 items-start w-full">
+          {/* Left Column: Form (Profile or Product) */}
+          <div className="col-span-1">
             {!isProfileLocked ? (
-              <ProfileForm onComplete={handleProfileComplete} initialData={profileData} />
+              <ProfileForm onComplete={handleProfileSubmit} initialData={existingProfile} />
             ) : (
-              <>
-                <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex justify-between items-center text-sm">
-                  <span className="text-green-800 font-medium">Financial reality verified.</span>
-                  <button 
-                    onClick={() => setIsProfileLocked(false)}
-                    className="text-green-700 hover:text-green-900 underline font-semibold"
-                  >
-                    Edit Profile
-                  </button>
-                </div>
-
-                {!productData ? (
-                  <ProductForm onSubmitProduct={handleProductSubmit} />
-                ) : (
-                  <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 animate-pulse text-center font-medium">
-                    Analysis in progress... (Awaiting FastAPI Backend)
-                  </div>
-                )}
-              </>
+              <ProductForm onSubmitProduct={handleProductSubmit} />
             )}
           </div>
-        </Show>
+
+          {/* Middle Column: Chat Interface */}
+          <div className="col-span-1">
+             <ChatInterface 
+                messages={chatHistory} 
+                onSendMessage={handleSendMessage}
+                isAnalyzing={isAnalyzing}
+             />
+          </div>
+
+          {/* Right Column: Verdict Dashboard */}
+          <div className="col-span-1">
+            {analysisData ? (
+              <AnalysisResult data={analysisData} onReset={resetAnalysis} />
+            ) : (
+              <div className="h-[600px] flex flex-col items-center justify-center text-gray-400 p-8 border border-dashed border-gray-300 rounded-xl bg-white">
+                <svg className="w-12 h-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                <p className="text-center font-medium">The Verdict Awaits</p>
+                <p className="text-sm text-center mt-2">The AI has not yet passed judgment on your purchase.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </main>
   );

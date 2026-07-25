@@ -11,7 +11,7 @@ import json
 load_dotenv()
 
 from sqlmodel import Field, SQLModel, create_engine, Session, select
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 import uuid
 
@@ -46,13 +46,15 @@ class AnalysisRecord(SQLModel, table=True):
     recommendation_action: str
     recommendation_alternative: str
 
+from sqlalchemy.pool import NullPool
+
 # --- ENGINE SETUP ---
 db_url = os.getenv("DATABASE_URL")
 if not db_url:
     raise RuntimeError("DATABASE_URL is utterly missing from the environment.")
 
 # Neon merekomendasikan penonaktifan connection pooling di sisi SQLAlchemy untuk serverless
-engine = create_engine(db_url, echo=False)
+engine = create_engine(db_url, echo=False, poolclass=NullPool)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -163,6 +165,14 @@ def save_profile(profile: ProfileCreateRequest):
         session.refresh(db_user)
         return {"status": "success", "message": "Financial reality locked in database."}
 
+@app.get("/api/profile/{user_id}")
+def get_profile(user_id: str):
+    with Session(engine) as session:
+        user = session.get(UserProfile, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return user
+
 class AnalyzeRequest(BaseModel):
     user_id: str
     product_url: str
@@ -171,6 +181,7 @@ class AnalyzeRequest(BaseModel):
     price: float
     reason: Optional[str] = ""
     urgency: Optional[str] = ""
+    chat_history: Optional[List[Dict[str, Any]]] = []
 
 @app.post("/api/analyze")
 def analyze_purchase(req: AnalyzeRequest):
@@ -186,6 +197,13 @@ def analyze_purchase(req: AnalyzeRequest):
 
         disposable_income = user.monthly_income - user.monthly_expense
         price_to_disposable_ratio = (req.price / disposable_income) * 100 if disposable_income > 0 else 999
+
+        chat_context = ""
+        if req.chat_history:
+            chat_context = "\n[CONVERSATION HISTORY]\n"
+            for msg in req.chat_history:
+                role = "USER" if msg.get("role") == "user" else "YOU (AI)"
+                chat_context += f"{role}: {msg.get('content')}\n"
 
         prompt = f"""
         Act as a ruthless, poetic, and highly analytical financial advisor. Do not sugarcoat anything. 
@@ -205,9 +223,25 @@ def analyze_purchase(req: AnalyzeRequest):
         Price: IDR {req.price} (This is {price_to_disposable_ratio:.1f}% of their monthly disposable income)
         Stated Reason: {req.reason}
         Urgency: {req.urgency}
+        {chat_context}
 
-        Return ONLY a valid JSON object with this exact schema:
+        INSTRUCTIONS:
+        You are an interactive AI Copilot. 
+        1. ALWAYS interrogate the user FIRST if their initial reasoning is short, vague, or weak (less than 3 sentences). Do not give a verdict immediately. Ask a piercing, sarcastic, or deeply analytical question to dig deeper into their psychology. Keep it under 3 sentences.
+        2. If the user asks a follow-up question or defends themselves, engage with them. Challenge their logic.
+        3. Only when you are absolutely satisfied (or completely disgusted) and have no more questions, deliver your FINAL VERDICT. Do not ask a question if you are giving a verdict.
+
+        Return ONLY a valid JSON object. Do not include markdown formatting like ```json.
+        
+        If you choose to ask a question or respond to the user's defense, use this exact schema:
         {{
+            "type": "question",
+            "message": "Your ruthless question here"
+        }}
+
+        If you choose to deliver the final verdict, use this exact schema:
+        {{
+            "type": "verdict",
             "suggested_risk_tier": "low | medium | high | catastrophic",
             "purchase_summary": "One punchy, poetic sentence summarizing the absurdity or validity of this purchase",
             "financial_impact_reason": "A ruthless breakdown of how this ruins or fits their financial goal",
@@ -225,26 +259,25 @@ def analyze_purchase(req: AnalyzeRequest):
             cleaned_response = ai_response.text.strip().removeprefix("```json").removesuffix("```").strip()
             result = json.loads(cleaned_response)
 
-            analysis_record = AnalysisRecord(
-                user_id=user.id,
-                product_name=req.product_name,
-                category=req.category,
-                price=req.price,
-                reason=req.reason,
-                product_url=req.product_url,
-                urgency=req.urgency,
-                suggested_risk_tier=result.get("suggested_risk_tier", "high"),
-                purchase_summary=result.get("purchase_summary", ""),
-                financial_impact_risk_tier=result.get("suggested_risk_tier", "high"),
-                financial_impact_reason=result.get("financial_impact_reason", ""),
-                behavioral_insight=result.get("behavioral_insight", ""),
-                recommendation_action=result.get("recommendation_action", "Drop"),
-                recommendation_alternative=result.get("recommendation_alternative", "")
-            )
-
-            session.add(analysis_record)
-            session.commit()
-            session.refresh(analysis_record)
+            if result.get("type") == "verdict":
+                analysis_record = AnalysisRecord(
+                    user_id=user.id,
+                    product_name=req.product_name,
+                    category=req.category,
+                    price=req.price,
+                    reason=req.reason,
+                    product_url=req.product_url,
+                    urgency=req.urgency,
+                    suggested_risk_tier=result.get("suggested_risk_tier", "high"),
+                    purchase_summary=result.get("purchase_summary", ""),
+                    financial_impact_risk_tier=result.get("suggested_risk_tier", "high"),
+                    financial_impact_reason=result.get("financial_impact_reason", ""),
+                    behavioral_insight=result.get("behavioral_insight", ""),
+                    recommendation_action=result.get("recommendation_action", "Drop"),
+                    recommendation_alternative=result.get("recommendation_alternative", "")
+                )
+                session.add(analysis_record)
+                session.commit()
 
             return result
 
