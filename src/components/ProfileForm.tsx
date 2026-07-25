@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ProfileForm({
     onComplete,
@@ -19,6 +19,26 @@ export default function ProfileForm({
     const [income, setIncome] = useState(initialData?.monthly_income !== undefined ? formatIDR(initialData.monthly_income) : "");
     const [expense, setExpense] = useState(initialData?.monthly_expense !== undefined ? formatIDR(initialData.monthly_expense) : "");
     const [savings, setSavings] = useState(initialData?.current_savings !== undefined ? formatIDR(initialData.current_savings) : "");
+
+    useEffect(() => {
+        if (initialData) {
+            setIncome(formatIDR(initialData.monthly_income));
+            setExpense(formatIDR(initialData.monthly_expense));
+            setSavings(formatIDR(initialData.current_savings));
+            // Uncontrolled inputs update
+            const form = document.querySelector('form') as HTMLFormElement;
+            if (form) {
+                const ageInput = form.elements.namedItem('age') as HTMLInputElement;
+                if (ageInput) ageInput.value = initialData.age || "";
+                
+                const occSelect = form.elements.namedItem('occupation_status') as HTMLSelectElement;
+                if (occSelect) occSelect.value = initialData.occupation_status || "student";
+                
+                const goalSelect = form.elements.namedItem('financial_goal') as HTMLSelectElement;
+                if (goalSelect) goalSelect.value = initialData.financial_goal || "emergency_fund";
+            }
+        }
+    }, [initialData]);
 
     const handleCurrencyChange = (
         e: React.ChangeEvent<HTMLInputElement>,
