@@ -117,21 +117,38 @@ async def scrape_product(req: ScrapeRequest):
         """
         
         ai_response = client.models.generate_content(
-            model='gemini-flash-latest',
+            model='gemini-flash-lite-latest',
             contents=prompt,
         )
         cleaned_response = ai_response.text.strip().removeprefix("```json").removesuffix("```").strip()
         result = json.loads(cleaned_response)
         
-        extracted_name = result.get("product_name", "").strip().lower()
-        if not extracted_name or "shopee" in extracted_name and len(extracted_name) < 20:
-            raise ValueError("Anti-bot blocked content extraction")
+        extracted_name = result.get("product_name", "").strip()
+        
+        # Anti-bot fallback: If title is generic "Shopee" or very short, try to extract from URL
+        if not extracted_name or ("shopee" in extracted_name.lower() and len(extracted_name) < 20):
+            try:
+                # e.g. https://shopee.co.id/Sony-Alpha-A7-Mark-III-Body-Only-Kamera-Mirrorless-i...
+                from urllib.parse import urlparse
+                path = urlparse(req.url).path
+                # get the first meaningful segment
+                segments = [s for s in path.split('/') if s]
+                if segments:
+                    slug = segments[0]
+                    if slug == "product" and len(segments) > 1:
+                        slug = segments[1]
+                    extracted_name = slug.replace("-", " ").title()
+                    result["product_name"] = extracted_name
+                    result["category"] = "other" # Fallback category
+            except:
+                raise ValueError("Anti-bot blocked content extraction and URL parsing failed")
             
         return result
         
     except Exception as e:
         print(f"Scrape Error: {repr(e)}")
         raise HTTPException(status_code=400, detail="Could not auto-fetch product details. Please enter them manually.")
+
 
 class ProfileCreateRequest(BaseModel):
     user_id: str
@@ -253,7 +270,7 @@ def analyze_purchase(req: AnalyzeRequest):
 
         try:
             ai_response = client.models.generate_content(
-                model='gemini-flash-latest',
+                model='gemini-flash-lite-latest',
                 contents=prompt,
             )
             cleaned_response = ai_response.text.strip().removeprefix("```json").removesuffix("```").strip()
