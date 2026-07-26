@@ -19,6 +19,7 @@ import uuid
 class UserProfile(SQLModel, table=True):
     __tablename__ = "users"
     id: str = Field(primary_key=True) # Akan diisi dengan user_id dari Clerk
+    name: Optional[str] = None
     age: int
     occupation_status: str
     monthly_income: float
@@ -152,6 +153,7 @@ async def scrape_product(req: ScrapeRequest):
 
 class ProfileCreateRequest(BaseModel):
     user_id: str
+    name: Optional[str] = None
     age: int
     occupation_status: str
     monthly_income: float
