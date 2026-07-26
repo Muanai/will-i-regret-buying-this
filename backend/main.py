@@ -24,7 +24,8 @@ class UserProfile(SQLModel, table=True):
     occupation_status: str
     monthly_income: float
     monthly_expense: float
-    current_savings: float
+    cash_on_hand: float = Field(default=0.0)
+    invested_amount: float = Field(default=0.0)
     financial_goal: str
     risk_tolerance: Optional[str] = "medium"
 
@@ -158,7 +159,8 @@ class ProfileCreateRequest(BaseModel):
     occupation_status: str
     monthly_income: float
     monthly_expense: float
-    current_savings: float
+    cash_on_hand: float
+    invested_amount: float
     financial_goal: str
     risk_tolerance: Optional[str] = "medium"
 
@@ -252,13 +254,15 @@ def analyze_purchase(req: AnalyzeRequest):
         Monthly Income: IDR {user.monthly_income}
         Monthly Expense: IDR {user.monthly_expense}
         Disposable Income: IDR {disposable_income}
-        Current Savings: IDR {user.current_savings}
+        Liquid Cash (Emergency Fund): IDR {user.cash_on_hand}
+        Invested Assets (Stocks/Crypto/etc): IDR {user.invested_amount}
+        Total Net Worth: IDR {user.cash_on_hand + user.invested_amount}
         Financial Goal: {user.financial_goal}
 
         [THE OBJECT OF DESIRE]
         Item: {req.product_name}
         Category: {req.category}
-        Price: IDR {req.price} (This is {price_to_disposable_ratio:.1f}% of their monthly disposable income)
+        Price: IDR {req.price} (This is {price_to_disposable_ratio:.1f}% of their monthly disposable income, and {(req.price / user.cash_on_hand * 100) if user.cash_on_hand > 0 else 999:.1f}% of their liquid cash)
         Stated Reason: {req.reason}
         Urgency: {req.urgency}
         {chat_context}
