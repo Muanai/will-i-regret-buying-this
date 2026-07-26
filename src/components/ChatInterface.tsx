@@ -29,7 +29,7 @@ export default function ChatInterface({ messages, onSendMessage, isAnalyzing }: 
   const isEmpty = messages.length === 0 && !isAnalyzing;
 
   return (
-    <div className="card-utility" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", padding: 0, borderRadius: 0, border: "none" }}>
+    <div className="card-utility" style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", padding: 0, borderRadius: 0, border: "none" }}>
       {/* Header */}
       <div style={{ background: "var(--color-surface-tile-1)", padding: "0 20px", display: "flex", alignItems: "center", height: "44px", flexShrink: 0, borderBottom: "1px solid #3a3a3c" }}>
         <div style={{ width: "2px", height: "16px", background: "var(--color-primary-on-dark)", borderRadius: "1px", marginRight: "12px", flexShrink: 0 }} />
@@ -77,7 +77,7 @@ export default function ChatInterface({ messages, onSendMessage, isAnalyzing }: 
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: "10px", padding: "14px 16px", borderTop: "1px solid var(--color-hairline)", background: "var(--color-canvas)", borderRadius: "0 0 var(--radius-lg) var(--radius-lg)", flexShrink: 0 }}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: "10px", padding: "14px 16px", borderTop: "1px solid var(--color-hairline)", background: "var(--color-canvas)", borderRadius: 0, flexShrink: 0 }}>
         <input
           type="text"
           value={input}
