@@ -283,13 +283,21 @@ def analyze_purchase(req: AnalyzeRequest):
             Tone: Sadistic, poetic, brutally pragmatic.
             """
 
-        # --- FIX #2: Pacing instruction based on conversation state ---
+        # --- FIX #2: Pacing instruction — differentiated per persona ---
         if force_verdict:
             pacing_instruction = """MANDATORY: You have already asked enough questions. You MUST deliver your FINAL VERDICT now. Do NOT ask another question."""
-        elif price_to_disposable_ratio < 5 and req.reason and len(req.reason) > 20:
-            pacing_instruction = """This purchase is clearly affordable and the user has given a solid reason. You MAY deliver a verdict immediately without asking questions first."""
+        elif req.personality == "roaster":
+            # Roaster should always interrogate at least once — that's the point
+            if ai_question_count == 0:
+                pacing_instruction = """You MUST ask ONE sharp, sarcastic, psychologically probing question before delivering a verdict. No exceptions. Even if the purchase seems affordable, dig into their motivation — people always lie to themselves. Keep it under 3 sentences."""
+            else:
+                pacing_instruction = """You may ask ONE more follow-up question to expose their denial, OR deliver your final verdict if you have enough ammunition. Do not ask a question if you are giving a verdict."""
         else:
-            pacing_instruction = """You may ask ONE probing question if the user's reasoning is short, vague, or weak. Keep your question under 3 sentences. Do not ask a question if you are giving a verdict."""
+            # Mentor — can skip question if purchase is clearly fine
+            if price_to_disposable_ratio < 5 and req.reason and len(req.reason) > 20:
+                pacing_instruction = """This purchase is clearly affordable and the user has given a solid reason. You MAY deliver a verdict immediately without asking questions first."""
+            else:
+                pacing_instruction = """If the user's reasoning is short or unclear, ask ONE warm, curious follow-up question. If their reasoning is complete, you may deliver a verdict directly. Do not ask a question if you are giving a verdict."""
 
         # --- FIX #4: Prompt only contains data, system instruction is separated ---
         prompt = f"""
