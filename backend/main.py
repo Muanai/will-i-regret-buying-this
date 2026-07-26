@@ -461,3 +461,14 @@ def get_user_history(user_id: str):
             for r in records
         ]
 
+
+@app.delete("/api/history/{record_id}")
+def delete_history_record(record_id: str):
+    with Session(engine) as session:
+        record = session.get(AnalysisRecord, record_id)
+        if not record:
+            raise HTTPException(status_code=404, detail="Record not found")
+        session.delete(record)
+        session.commit()
+        return {"status": "deleted"}
+
