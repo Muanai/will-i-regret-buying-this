@@ -26,6 +26,8 @@ class UserProfile(SQLModel, table=True):
     monthly_expense: float
     cash_on_hand: float = Field(default=0.0)
     invested_amount: float = Field(default=0.0)
+    current_debt: float = Field(default=0.0)
+    dependents: int = Field(default=0)
     financial_goal: str
     risk_tolerance: Optional[str] = "medium"
 
@@ -40,6 +42,8 @@ class AnalysisRecord(SQLModel, table=True):
     reason: Optional[str] = None
     product_url: str
     urgency: Optional[str] = None
+    usage_frequency: Optional[str] = None
+    purchase_motivation: Optional[str] = None
     suggested_risk_tier: str
     purchase_summary: str
     financial_impact_risk_tier: str
@@ -112,7 +116,7 @@ async def scrape_product(req: ScrapeRequest):
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         prompt = f"""
         Extract the product name and map it to a category from this text.
-        Categories: electronics, fashion, furniture, travel, education, other.
+        Categories: electronics, fashion, furniture, vehicle, hobby, entertainment, health_beauty, home, travel, education, other.
         Return ONLY valid JSON.
         Schema: {{"product_name": "string", "category": "string"}}
         Text: {raw_text}
@@ -161,6 +165,8 @@ class ProfileCreateRequest(BaseModel):
     monthly_expense: float
     cash_on_hand: float
     invested_amount: float
+    current_debt: float = 0.0
+    dependents: int = 0
     financial_goal: str
     risk_tolerance: Optional[str] = "medium"
 
@@ -202,6 +208,8 @@ class AnalyzeRequest(BaseModel):
     price: float
     reason: Optional[str] = ""
     urgency: Optional[str] = ""
+    usage_frequency: Optional[str] = ""
+    purchase_motivation: Optional[str] = ""
     personality: Optional[str] = "roaster"
     chat_history: Optional[List[Dict[str, Any]]] = []
 
@@ -229,11 +237,19 @@ def analyze_purchase(req: AnalyzeRequest):
 
         if req.personality == "mentor":
             system_instruction = """
-            Act as a wise, empathetic, and highly analytical financial mentor. 
-            Your goal is to educate the user and guide them toward financial freedom. 
-            If the item is a luxury, gently explain the opportunity cost and teach them better habits. 
-            If the item is a tool of production, validate their ambition but help them calculate if the ROI justifies the price at their current income level. 
-            Tone: Polite, encouraging, objective, and educational.
+            You are a trusted, warm-hearted, and brilliant financial mentor — think of a brilliant older sibling who genuinely wants you to win with money.
+            
+            CORE PHILOSOPHY: You believe in people's potential. You never shame. You never condescend. You educate, illuminate, and then empower.
+            
+            RULE 1 — TONE: Always open with a warm, non-judgmental acknowledgment. Then pivot to an insightful observation they may not have considered. Never use words like "meager", "dangerously", "barely", "thin", or any language that makes the user feel stupid or judged.
+            
+            RULE 2 — FOR LEISURE / HOBBY PURCHASES: Acknowledge the emotional value of rest and fun — they are real and important. Then do the math transparently: show them the cost as a percentage of their disposable income, not as a threat. Help them see if it's genuinely affordable.
+            
+            RULE 3 — FOR PRODUCTIVE TOOLS: Validate their ambition. Help them calculate the real ROI at their current income level. Ask what specific problem this solves or what goal it accelerates.
+            
+            RULE 4 — WHEN ASKING A QUESTION: Ask only one clear, curious question — like a mentor probing to understand their situation better, not a prosecutor cross-examining. The question should feel like a conversation, not an interrogation.
+            
+            Tone: Warm, curious, insightful, like a knowledgeable friend over coffee.
             """
         else:
             system_instruction = """
@@ -251,19 +267,24 @@ def analyze_purchase(req: AnalyzeRequest):
 
         [USER FINANCIAL REALITY]
         Age: {user.age}
+        Occupation: {user.occupation_status}
+        Dependents: {user.dependents}
         Monthly Income: IDR {user.monthly_income}
         Monthly Expense: IDR {user.monthly_expense}
         Disposable Income: IDR {disposable_income}
         Liquid Cash (Emergency Fund): IDR {user.cash_on_hand}
-        Invested Assets (Stocks/Crypto/etc): IDR {user.invested_amount}
-        Total Net Worth: IDR {user.cash_on_hand + user.invested_amount}
+        Invested Assets: IDR {user.invested_amount}
+        Current Debt / Paylater: IDR {user.current_debt}
+        Total Net Worth: IDR {user.cash_on_hand + user.invested_amount - user.current_debt}
         Financial Goal: {user.financial_goal}
 
         [THE OBJECT OF DESIRE]
         Item: {req.product_name}
         Category: {req.category}
-        Price: IDR {req.price} (This is {price_to_disposable_ratio:.1f}% of their monthly disposable income, and {(req.price / user.cash_on_hand * 100) if user.cash_on_hand > 0 else 999:.1f}% of their liquid cash)
+        Price: IDR {req.price} (This is {price_to_disposable_ratio:.1f}% of their monthly disposable income)
         Stated Reason: {req.reason}
+        Motivation: {req.purchase_motivation}
+        Usage Frequency: {req.usage_frequency}
         Urgency: {req.urgency}
         {chat_context}
 
@@ -310,6 +331,8 @@ def analyze_purchase(req: AnalyzeRequest):
                     reason=req.reason,
                     product_url=req.product_url,
                     urgency=req.urgency,
+                    usage_frequency=req.usage_frequency,
+                    purchase_motivation=req.purchase_motivation,
                     suggested_risk_tier=result.get("suggested_risk_tier", "high"),
                     purchase_summary=result.get("purchase_summary", ""),
                     financial_impact_risk_tier=result.get("suggested_risk_tier", "high"),
