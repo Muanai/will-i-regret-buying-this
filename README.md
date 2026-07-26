@@ -2,7 +2,7 @@
 
 An AI-powered financial conscience application that interrogates your impulse purchases before you make them. Built with a premium "Developer Tool" aesthetic, it forces you to face the financial consequences of your desires using hard data and an unapologetic AI.
 
-## 🚀 Features
+## Features
 
 - **The Interrogation Room:** Submit a product you want to buy, and the AI will cross-examine your decision based on your real financial DNA.
 - **Two Oracles (Personalities):** Choose between *The Mentor* (wise, objective, supportive) or *The Roaster* (ruthless, sarcastic, merciless).
@@ -12,7 +12,7 @@ An AI-powered financial conscience application that interrogates your impulse pu
 - **Real-Time URL Scraping:** Paste a product URL (Shopee, Tokopedia, Steam, etc.), and the system will automatically extract the product name and category using BeautifulSoup and Gemini fallback processing.
 - **Financial DNA Profiling:** A complete breakdown of your cash on hand, monthly income, expenses, debt, and investments to ground the AI's logic.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Frontend (Client)
 - **Framework:** Next.js 14 (App Router, TypeScript)
@@ -30,7 +30,7 @@ An AI-powered financial conscience application that interrogates your impulse pu
 - **AI / LLM:** Google Gemini API (`gemini-flash-lite-latest`)
 - **Scraping:** HTTPX & BeautifulSoup4
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 c:\Workspace\projects\web\will-i-regret-buying-this\
