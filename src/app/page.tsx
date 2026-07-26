@@ -273,13 +273,14 @@ export default function Dashboard() {
 
           {/* RIGHT SIDEBAR — Verdict (slides in only when result exists) */}
           <div style={{
-            width: analysisData ? "340px" : "0px",
+            width: analysisData ? "420px" : "0px",
             flexShrink: 0,
             overflow: "hidden",
             background: "var(--color-canvas)",
             transition: "width 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+            borderLeft: analysisData ? "1px solid var(--color-hairline)" : "none"
           }}>
-            <div style={{ width: "340px", height: "100%", overflowY: "auto", padding: "24px 20px" }}>
+            <div style={{ width: "420px", height: "100%", overflowY: "auto", padding: "24px 20px" }}>
               <AnalysisResult data={analysisData} onReset={resetAnalysis} />
             </div>
           </div>
