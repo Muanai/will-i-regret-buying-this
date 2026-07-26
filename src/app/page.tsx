@@ -12,6 +12,58 @@ interface Message {
   content: string;
 }
 
+const CountdownTimer = ({ createdAt }: { createdAt: string }) => {
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+
+  useEffect(() => {
+    const targetDate = new Date(new Date(createdAt).getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = targetDate.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        return;
+      }
+      
+      setTimeLeft({
+        d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        m: Math.floor((diff / 1000 / 60) % 60),
+        s: Math.floor((diff / 1000) % 60)
+      });
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  if (!timeLeft) return <span style={{ fontSize: "12px", color: "var(--color-ink-muted-48)" }}>Calculating...</span>;
+  
+  const isUnlocked = timeLeft.d === 0 && timeLeft.h === 0 && timeLeft.m === 0 && timeLeft.s === 0;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+      {isUnlocked ? (
+        <span style={{ color: "#34c759", fontSize: "14px", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          UNLOCKED
+        </span>
+      ) : (
+        <>
+          <span style={{ color: "#ff9f0a", fontSize: "14px", fontWeight: 700, fontFamily: '"SF Pro Display", monospace', letterSpacing: "1px", display: "flex", alignItems: "center", gap: "6px" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            {timeLeft.d}d {timeLeft.h}h {timeLeft.m}m {timeLeft.s}s
+          </span>
+          <span style={{ fontSize: "10px", color: "var(--color-ink-muted-48)", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>Cooling Period Active</span>
+        </>
+      )}
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [isProfileLocked, setIsProfileLocked] = useState(false);
@@ -26,6 +78,7 @@ export default function Dashboard() {
   const [isProfileFetching, setIsProfileFetching] = useState(true);
   
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isWaitingRoomOpen, setIsWaitingRoomOpen] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
 
   const fetchHistory = async () => {
@@ -36,6 +89,16 @@ export default function Dashboard() {
       if (res.ok) {
         const data = await res.json();
         setHistoryData(data);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteHistoryRecord = async (recordId: string) => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/history/${recordId}`, { method: "DELETE" });
+      if (res.ok) {
+        setHistoryData(prev => prev.filter(item => item.id !== recordId));
       }
     } catch (e) { console.error(e); }
   };
@@ -63,9 +126,11 @@ export default function Dashboard() {
 
   if (!isSignedIn) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--color-surface-black)", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-        {/* Ambient background glow — breathing */}
-        <div className="landing-glow" style={{ position: "absolute", top: "-20%", left: "50%", width: "800px", height: "800px", background: "radial-gradient(ellipse at center, rgba(0, 102, 204, 0.15) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at top, #1a1a1c 0%, #000000 100%)", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+        {/* Background Animation: Tech Grid & Glowing Orb */}
+        <div className="tech-grid" />
+        <div className="tech-glow-orb" />
+        <div className="tech-glow-orb" style={{ top: "40%", left: "60%", background: "radial-gradient(ellipse at center, rgba(41, 151, 255, 0.2) 0%, transparent 50%)", animationDelay: "5s", width: "40vw", height: "40vh" }} />
         {/* Nav */}
         <nav className="landing-nav" style={{ position: "relative", zIndex: 1, padding: "0 40px", height: "44px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <span style={{ color: "var(--color-body-muted)", fontSize: "13px", letterSpacing: "-0.12px" }}>Will I Regret Buying This?</span>
@@ -157,6 +222,21 @@ export default function Dashboard() {
             <>
               <button 
                   onClick={() => {
+                      setIsWaitingRoomOpen(true);
+                      fetchHistory();
+                  }}
+                  className="type-nav-link" 
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-body-muted)", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                  Waiting Room
+                  {historyData.filter(d => d.recommendation_action === 'Delay').length > 0 && (
+                    <span style={{ background: "#ff9f0a", color: "#fff", fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "99px" }}>
+                      {historyData.filter(d => d.recommendation_action === 'Delay').length}
+                    </span>
+                  )}
+              </button>
+              <button 
+                  onClick={() => {
                       setIsHistoryOpen(true);
                       fetchHistory();
                   }}
@@ -183,7 +263,7 @@ export default function Dashboard() {
 
       {/* MAIN CONTENT — full-height panel layout */}
       <main style={{
-        height: "calc(100vh - 44px - 36px)",
+        flex: 1,
         background: "var(--color-canvas-parchment)",
         display: "flex",
         flexDirection: "column",
@@ -230,63 +310,7 @@ export default function Dashboard() {
 
           {/* LEFT SIDEBAR — Form (fixed 460px) */}
           <div className="sidebar-left">
-            {isSettingsOpen ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
-                  {/* Settings Header */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "20px", borderBottom: "1px solid var(--color-hairline)" }}>
-                      <h2 className="type-display-md" style={{ margin: 0 }}>Settings</h2>
-                      <button onClick={() => setIsSettingsOpen(false)} style={{ background: "rgba(0,0,0,0.06)", border: "none", cursor: "pointer", width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", color: "var(--color-ink-muted-48)", flexShrink: 0, transition: "background 0.15s ease" }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,0.10)")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,0,0,0.06)")}>
-                          &times;
-                      </button>
-                  </div>
-                  {/* Oracle Selector */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                          <label className="label-field">AI Personality</label>
-                          <span className="type-caption" style={{ color: personality === "mentor" ? "#34c759" : "#ff3b30", fontWeight: 600 }}>{personality === "mentor" ? "The Mentor" : "The Roaster"}</span>
-                      </div>
-                      <div style={{ display: "flex", background: "var(--color-canvas-parchment)", padding: "3px", borderRadius: "10px", gap: "3px" }}>
-                          <button
-                              type="button"
-                              onClick={() => setPersonality("mentor")}
-                              style={{ flex: 1, padding: "9px 12px", border: "none", borderRadius: "8px", cursor: "pointer",
-                                       background: personality === "mentor" ? "var(--color-canvas)" : "transparent",
-                                       color: personality === "mentor" ? "var(--color-ink)" : "var(--color-ink-muted-48)",
-                                       boxShadow: personality === "mentor" ? "0 1px 3px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.06)" : "none",
-                                       fontWeight: personality === "mentor" ? 600 : 400,
-                                       fontSize: "14px",
-                                       letterSpacing: "-0.12px",
-                                       transition: "all 0.2s ease" }}
-                          >The Mentor</button>
-                          <button
-                              type="button"
-                              onClick={() => setPersonality("roaster")}
-                              style={{ flex: 1, padding: "9px 12px", border: "none", borderRadius: "8px", cursor: "pointer",
-                                       background: personality === "roaster" ? "var(--color-canvas)" : "transparent",
-                                       color: personality === "roaster" ? "var(--color-ink)" : "var(--color-ink-muted-48)",
-                                       boxShadow: personality === "roaster" ? "0 1px 3px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.06)" : "none",
-                                       fontWeight: personality === "roaster" ? 600 : 400,
-                                       fontSize: "14px",
-                                       letterSpacing: "-0.12px",
-                                       transition: "all 0.2s ease" }}
-                          >The Roaster</button>
-                      </div>
-                      <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: 0 }}>
-                          {personality === "mentor" ? "Polite, educational, and guides you toward better financial habits." : "Ruthless, sarcastic, and absolutely destroys financial delusions."}
-                      </p>
-                  </div>
-                  {/* Divider */}
-                  <div style={{ height: "1px", background: "var(--color-hairline)" }} />
-                  {/* Profile Form */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label className="label-field">Financial Profile</label>
-                      <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "0 0 4px" }}>Update your profile to improve analysis accuracy.</p>
-                  </div>
-                  <ProfileForm onComplete={async (data) => { await handleProfileSubmit(data); setIsSettingsOpen(false); }} initialData={existingProfile} />
-              </div>
-            ) : !isProfileLocked ? (
+            {!isProfileLocked ? (
               <ProfileForm onComplete={handleProfileSubmit} initialData={existingProfile} />
             ) : (
               <ProductForm onSubmitProduct={handleProductSubmit} />
@@ -332,7 +356,12 @@ export default function Dashboard() {
                   {historyData.map((item) => (
                     <div key={item.id} style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}>{item.product_name}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}>{item.product_name}</span>
+                          <button onClick={() => deleteHistoryRecord(item.id)} title="Delete record" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-ink-muted-48)", padding: 0, display: "flex", alignItems: "center", transition: "color 0.15s" }} onMouseEnter={e => e.currentTarget.style.color = "#ff3b30"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-ink-muted-48)"}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
                         <span style={{ fontSize: "13px", color: "var(--color-ink-muted-48)" }}>Rp {new Intl.NumberFormat("id-ID").format(item.price)} • {item.category.replace("_", " ")}</span>
                         <span style={{ fontSize: "11px", color: "var(--color-ink-muted-48)", marginTop: "4px" }}>{new Date(item.created_at).toLocaleDateString()}</span>
                       </div>
@@ -353,6 +382,115 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── WAITING ROOM MODAL ── */}
+      {isWaitingRoomOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "600px", maxHeight: "80vh", background: "var(--color-canvas)", borderRadius: "20px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.2)", border: "1px solid rgba(255,159,10,0.3)" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,159,10,0.05)" }}>
+              <div>
+                <h2 className="type-display-md" style={{ fontSize: "24px", margin: 0, letterSpacing: "-0.5px", color: "#ff9f0a", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  The Waiting Room
+                </h2>
+                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "4px 0 0" }}>Impulse purchases locked for 7 days cooling-off period.</p>
+              </div>
+              <button onClick={() => setIsWaitingRoomOpen(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-divider-soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "var(--color-ink-muted-48)" }}>&times;</button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
+              {historyData.filter(d => d.recommendation_action === 'Delay').length === 0 ? (
+                <div style={{ padding: "40px", textAlign: "center", color: "var(--color-ink-muted-48)" }}>
+                  <p className="type-caption">Your waiting room is empty. No active cooling periods.</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "24px", paddingTop: "12px" }}>
+                  {historyData.filter(d => d.recommendation_action === 'Delay').map((item) => (
+                    <div key={item.id} style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--color-surface-pearl)" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}>{item.product_name}</span>
+                          <button onClick={() => deleteHistoryRecord(item.id)} title="Delete record" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-ink-muted-48)", padding: 0, display: "flex", alignItems: "center", transition: "color 0.15s" }} onMouseEnter={e => e.currentTarget.style.color = "#ff3b30"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-ink-muted-48)"}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                        <span style={{ fontSize: "13px", color: "var(--color-ink-muted-48)" }}>Rp {new Intl.NumberFormat("id-ID").format(item.price)} • {item.category.replace("_", " ")}</span>
+                        <span style={{ fontSize: "11px", color: "var(--color-ink-muted-48)", marginTop: "4px" }}>Locked on: {new Date(item.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <CountdownTimer createdAt={item.created_at} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── SETTINGS MODAL ── */}
+      {isSettingsOpen && isProfileLocked && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "500px", maxHeight: "85vh", background: "var(--color-canvas)", borderRadius: "20px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--color-surface-pearl)" }}>
+              <div>
+                <h2 className="type-display-md" style={{ fontSize: "24px", margin: 0, letterSpacing: "-0.5px" }}>Settings</h2>
+                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "4px 0 0" }}>Adjust the AI and update your financial profile.</p>
+              </div>
+              <button onClick={() => setIsSettingsOpen(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-divider-soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "var(--color-ink-muted-48)", transition: "background 0.15s ease" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--color-hairline)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "var(--color-divider-soft)")}>
+                  &times;
+              </button>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+                {/* Oracle Selector */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <label className="label-field">AI Personality</label>
+                        <span className="type-caption" style={{ color: personality === "mentor" ? "#34c759" : "#ff3b30", fontWeight: 600 }}>{personality === "mentor" ? "The Mentor" : "The Roaster"}</span>
+                    </div>
+                    <div style={{ display: "flex", background: "var(--color-canvas-parchment)", padding: "3px", borderRadius: "10px", gap: "3px" }}>
+                        <button
+                            type="button"
+                            onClick={() => setPersonality("mentor")}
+                            style={{ flex: 1, padding: "9px 12px", border: "none", borderRadius: "8px", cursor: "pointer",
+                                     background: personality === "mentor" ? "var(--color-canvas)" : "transparent",
+                                     color: personality === "mentor" ? "var(--color-ink)" : "var(--color-ink-muted-48)",
+                                     boxShadow: personality === "mentor" ? "0 1px 3px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.06)" : "none",
+                                     fontWeight: personality === "mentor" ? 600 : 400,
+                                     fontSize: "14px",
+                                     letterSpacing: "-0.12px",
+                                     transition: "all 0.2s ease" }}
+                        >The Mentor</button>
+                        <button
+                            type="button"
+                            onClick={() => setPersonality("roaster")}
+                            style={{ flex: 1, padding: "9px 12px", border: "none", borderRadius: "8px", cursor: "pointer",
+                                     background: personality === "roaster" ? "var(--color-canvas)" : "transparent",
+                                     color: personality === "roaster" ? "var(--color-ink)" : "var(--color-ink-muted-48)",
+                                     boxShadow: personality === "roaster" ? "0 1px 3px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.06)" : "none",
+                                     fontWeight: personality === "roaster" ? 600 : 400,
+                                     fontSize: "14px",
+                                     letterSpacing: "-0.12px",
+                                     transition: "all 0.2s ease" }}
+                        >The Roaster</button>
+                    </div>
+                    <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: 0 }}>
+                        {personality === "mentor" ? "Polite, educational, and guides you toward better financial habits." : "Ruthless, sarcastic, and absolutely destroys financial delusions."}
+                    </p>
+                </div>
+                {/* Divider */}
+                <div style={{ height: "1px", background: "var(--color-hairline)" }} />
+                {/* Profile Form */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label className="label-field">Financial Profile</label>
+                </div>
+                <ProfileForm onComplete={async (data) => { await handleProfileSubmit(data); setIsSettingsOpen(false); }} initialData={existingProfile} />
+              </div>
             </div>
           </div>
         </div>
