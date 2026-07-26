@@ -44,9 +44,9 @@ class AnalysisRecord(SQLModel, table=True):
     urgency: Optional[str] = None
     usage_frequency: Optional[str] = None
     purchase_motivation: Optional[str] = None
-    suggested_risk_tier: str
+    regret_score: int
     purchase_summary: str
-    financial_impact_risk_tier: str
+    quick_stats: str = Field(default="[]")
     financial_impact_reason: str
     behavioral_insight: str
     recommendation_action: str
@@ -305,7 +305,11 @@ def analyze_purchase(req: AnalyzeRequest):
         If you choose to deliver the final verdict, use this exact schema:
         {{
             "type": "verdict",
-            "suggested_risk_tier": "low | medium | high | catastrophic",
+            "regret_score": 85, 
+            "quick_stats": [
+                {{"label": "Cost vs Income", "value": "15%"}},
+                {{"label": "Recovery Time", "value": "3 Months"}}
+            ],
             "purchase_summary": "One punchy, poetic sentence summarizing the absurdity or validity of this purchase",
             "financial_impact_reason": "A ruthless breakdown of how this ruins or fits their financial goal",
             "behavioral_insight": "A skeptical psychological analysis of why they actually want this",
@@ -333,9 +337,9 @@ def analyze_purchase(req: AnalyzeRequest):
                     urgency=req.urgency,
                     usage_frequency=req.usage_frequency,
                     purchase_motivation=req.purchase_motivation,
-                    suggested_risk_tier=result.get("suggested_risk_tier", "high"),
+                    regret_score=int(result.get("regret_score", 100)),
                     purchase_summary=result.get("purchase_summary", ""),
-                    financial_impact_risk_tier=result.get("suggested_risk_tier", "high"),
+                    quick_stats=json.dumps(result.get("quick_stats", [])),
                     financial_impact_reason=result.get("financial_impact_reason", ""),
                     behavioral_insight=result.get("behavioral_insight", ""),
                     recommendation_action=result.get("recommendation_action", "Drop"),
