@@ -48,15 +48,47 @@ export default function Dashboard() {
 
   if (!isSignedIn) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--color-surface-black)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 24px", textAlign: "center" }}>
-        <p style={{ color: "var(--color-primary-on-dark)", fontSize: "14px", fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "20px" }}>Financial Intelligence</p>
-        <h1 className="type-display-lg" style={{ color: "var(--color-on-dark)", maxWidth: "600px", marginBottom: "16px" }}>Will I Regret Buying This?</h1>
-        <p className="type-lead" style={{ color: "var(--color-body-muted)", maxWidth: "480px", marginBottom: "40px" }}>The AI that protects your wealth from your own impulses.</p>
-        <SignInButton mode="modal">
-          <button className="btn-primary" style={{ fontSize: "18px", fontWeight: 300, padding: "14px 32px" }}>
-            Sign In to Face Reality
-          </button>
-        </SignInButton>
+      <div style={{ minHeight: "100vh", background: "var(--color-surface-black)", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+        {/* Ambient background glow — breathing */}
+        <div className="landing-glow" style={{ position: "absolute", top: "-20%", left: "50%", width: "800px", height: "800px", background: "radial-gradient(ellipse at center, rgba(0, 102, 204, 0.15) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+        {/* Nav */}
+        <nav className="landing-nav" style={{ position: "relative", zIndex: 1, padding: "0 40px", height: "44px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <span style={{ color: "var(--color-body-muted)", fontSize: "13px", letterSpacing: "-0.12px" }}>Will I Regret Buying This?</span>
+          <SignInButton mode="modal">
+            <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-primary-on-dark)", fontSize: "13px", letterSpacing: "-0.12px" }}>Sign In</button>
+          </SignInButton>
+        </nav>
+        {/* Hero */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 24px", textAlign: "center", position: "relative", zIndex: 1 }}>
+          <p className="landing-eyebrow" style={{ color: "var(--color-primary-on-dark)", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "24px", opacity: 0.9 }}>AI Financial Conscience</p>
+          <h1 className="landing-headline" style={{ fontFamily: '"SF Pro Display", system-ui, -apple-system, "Inter", sans-serif', fontSize: "clamp(40px, 7vw, 72px)", fontWeight: 600, lineHeight: 1.06, letterSpacing: "-0.01em", color: "var(--color-on-dark)", maxWidth: "800px", marginBottom: "24px" }}>
+            Will I Regret<br />Buying This?
+          </h1>
+          <p className="landing-subline" style={{ fontFamily: '"SF Pro Display", system-ui, -apple-system, "Inter", sans-serif', fontSize: "clamp(19px, 2.5vw, 24px)", fontWeight: 300, lineHeight: 1.5, color: "var(--color-body-muted)", maxWidth: "520px", marginBottom: "48px" }}>
+            The AI that interrogates your financial impulses — so your wallet doesn't have to suffer the consequences.
+          </p>
+          <div className="landing-cta" style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center", marginBottom: "72px" }}>
+            <SignInButton mode="modal">
+              <button className="btn-primary" style={{ fontSize: "18px", fontWeight: 300, padding: "14px 36px" }}>
+                Face the Verdict
+              </button>
+            </SignInButton>
+          </div>
+          {/* Value Props */}
+          <div className="landing-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", maxWidth: "720px", width: "100%", background: "rgba(255,255,255,0.06)", borderRadius: "18px", overflow: "hidden" }}>
+            {[{ icon: "◆", title: "Real-Time Scraping", desc: "Paste any product URL. We read the page so you don't have to." }, { icon: "◈", title: "Your Financial DNA", desc: "Analysis anchored to your actual income, cash, and investments." }, { icon: "◉", title: "Two Oracles", desc: "Switch between The Mentor and The Roaster — your call." }].map((item, i) => (
+              <div key={i} style={{ background: "rgba(255,255,255,0.04)", padding: "28px 24px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <span style={{ fontSize: "20px", color: "var(--color-primary-on-dark)", opacity: 0.7 }}>{item.icon}</span>
+                <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-on-dark)", letterSpacing: "-0.12px", margin: 0 }}>{item.title}</p>
+                <p style={{ fontSize: "13px", color: "var(--color-body-muted)", lineHeight: 1.5, margin: 0 }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Footer */}
+        <div style={{ position: "relative", zIndex: 1, padding: "20px 40px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "center" }}>
+          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", margin: 0 }}>Your financial data is used only for analysis. Never sold. Never stored beyond your session.</p>
+        </div>
       </div>
     );
   }
@@ -172,35 +204,58 @@ export default function Dashboard() {
           {/* LEFT SIDEBAR — Form (fixed 460px) */}
           <div style={{ width: "460px", flexShrink: 0, background: "var(--color-canvas)", overflowY: "auto", padding: "28px 32px" }}>
             {isSettingsOpen ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                  <div className="card-utility" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        <label className="label-field">Choose Your Oracle</label>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                            <div 
-                                onClick={() => setPersonality("mentor")}
-                                style={{
-                                    cursor: "pointer", padding: "16px", borderRadius: "var(--radius-md)",
-                                    border: personality === "mentor" ? "2px solid #34c759" : "1px solid var(--color-hairline)",
-                                    background: personality === "mentor" ? "rgba(52, 199, 89, 0.05)" : "transparent",
-                                    transition: "all 0.2s ease"
-                                }}
-                            >
-                                <h4 className="type-body" style={{ fontWeight: 600, color: personality === "mentor" ? "#34c759" : "var(--color-ink)", marginBottom: "4px" }}>The Mentor</h4>
-                                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Polite, educational, and guides you toward better habits.</p>
-                            </div>
-                            <div 
-                                onClick={() => setPersonality("roaster")}
-                                style={{
-                                    cursor: "pointer", padding: "16px", borderRadius: "var(--radius-md)",
-                                    border: personality === "roaster" ? "2px solid #ff3b30" : "1px solid var(--color-hairline)",
-                                    background: personality === "roaster" ? "rgba(255, 59, 48, 0.05)" : "transparent",
-                                    transition: "all 0.2s ease"
-                                }}
-                            >
-                                <h4 className="type-body" style={{ fontWeight: 600, color: personality === "roaster" ? "#ff3b30" : "var(--color-ink)", marginBottom: "4px" }}>The Roaster</h4>
-                                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Ruthless, sarcastic, and destroys financial delusions.</p>
-                            </div>
-                        </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+                  {/* Settings Header */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "20px", borderBottom: "1px solid var(--color-hairline)" }}>
+                      <h2 className="type-display-md" style={{ margin: 0 }}>Settings</h2>
+                      <button onClick={() => setIsSettingsOpen(false)} style={{ background: "rgba(0,0,0,0.06)", border: "none", cursor: "pointer", width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", color: "var(--color-ink-muted-48)", flexShrink: 0, transition: "background 0.15s ease" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,0,0,0.10)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,0,0,0.06)")}>
+                          &times;
+                      </button>
+                  </div>
+                  {/* Oracle Selector */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <label className="label-field">AI Personality</label>
+                          <span className="type-caption" style={{ color: personality === "mentor" ? "#34c759" : "#ff3b30", fontWeight: 600 }}>{personality === "mentor" ? "The Mentor" : "The Roaster"}</span>
+                      </div>
+                      <div style={{ display: "flex", background: "var(--color-canvas-parchment)", padding: "3px", borderRadius: "10px", gap: "3px" }}>
+                          <button
+                              type="button"
+                              onClick={() => setPersonality("mentor")}
+                              style={{ flex: 1, padding: "9px 12px", border: "none", borderRadius: "8px", cursor: "pointer",
+                                       background: personality === "mentor" ? "var(--color-canvas)" : "transparent",
+                                       color: personality === "mentor" ? "var(--color-ink)" : "var(--color-ink-muted-48)",
+                                       boxShadow: personality === "mentor" ? "0 1px 3px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.06)" : "none",
+                                       fontWeight: personality === "mentor" ? 600 : 400,
+                                       fontSize: "14px",
+                                       letterSpacing: "-0.12px",
+                                       transition: "all 0.2s ease" }}
+                          >The Mentor</button>
+                          <button
+                              type="button"
+                              onClick={() => setPersonality("roaster")}
+                              style={{ flex: 1, padding: "9px 12px", border: "none", borderRadius: "8px", cursor: "pointer",
+                                       background: personality === "roaster" ? "var(--color-canvas)" : "transparent",
+                                       color: personality === "roaster" ? "var(--color-ink)" : "var(--color-ink-muted-48)",
+                                       boxShadow: personality === "roaster" ? "0 1px 3px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.06)" : "none",
+                                       fontWeight: personality === "roaster" ? 600 : 400,
+                                       fontSize: "14px",
+                                       letterSpacing: "-0.12px",
+                                       transition: "all 0.2s ease" }}
+                          >The Roaster</button>
+                      </div>
+                      <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: 0 }}>
+                          {personality === "mentor" ? "Polite, educational, and guides you toward better financial habits." : "Ruthless, sarcastic, and absolutely destroys financial delusions."}
+                      </p>
+                  </div>
+                  {/* Divider */}
+                  <div style={{ height: "1px", background: "var(--color-hairline)" }} />
+                  {/* Profile Form */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <label className="label-field">Financial Profile</label>
+                      <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "0 0 4px" }}>Update your profile to improve analysis accuracy.</p>
                   </div>
                   <ProfileForm onComplete={async (data) => { await handleProfileSubmit(data); setIsSettingsOpen(false); }} initialData={existingProfile} />
               </div>

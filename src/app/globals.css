@@ -49,6 +49,66 @@
 
 
 /* ============================================
+   LANDING PAGE ANIMATIONS
+   ============================================ */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.12; transform: translateX(-50%) scale(1); }
+  50%       { opacity: 0.22; transform: translateX(-50%) scale(1.08); }
+}
+
+.landing-glow {
+  animation: glow-pulse 6s ease-in-out infinite;
+}
+
+.landing-eyebrow {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.1s;
+}
+
+.landing-headline {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.25s;
+}
+
+.landing-subline {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.4s;
+}
+
+.landing-cta {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.55s;
+}
+
+.landing-cards {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.7s;
+}
+
+.landing-nav {
+  animation: fade-in 0.5s ease both;
+  animation-delay: 0.05s;
+}
+
+
+/* ============================================
    APPLE DESIGN SYSTEM — DESIGN TOKEN LAYER
    Source: DESIGN-apple.md
    ============================================ */
