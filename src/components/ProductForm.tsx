@@ -46,7 +46,9 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
             category: data.category, 
             price: parseNumber(price), 
             reason: data.reason || "", 
-            urgency: data.urgency || ""
+            urgency: data.urgency || "",
+            usage_frequency: data.usage_frequency || "",
+            purchase_motivation: data.purchase_motivation || ""
         });
     };
 
@@ -103,10 +105,15 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
                         <select name="category" required value={category || ""} onChange={e => setCategory(e.target.value)} className="select-field" style={{ fontSize: "15px" }}>
                             <option value="">Select…</option>
 
-                            <option value="electronics">Electronics</option>
-                            <option value="fashion">Fashion</option>
+                            <option value="electronics">Electronics & Gadgets</option>
+                            <option value="fashion">Fashion & Apparel</option>
                             <option value="furniture">Furniture</option>
-                            <option value="travel">Travel</option>
+                            <option value="vehicle">Vehicle & Parts</option>
+                            <option value="hobby">Hobby & Collectibles</option>
+                            <option value="entertainment">Entertainment & Gaming</option>
+                            <option value="health_beauty">Health & Beauty</option>
+                            <option value="home">Home Appliances</option>
+                            <option value="travel">Travel & Experience</option>
                             <option value="education">Education</option>
                             <option value="other">Other</option>
                         </select>
@@ -126,11 +133,37 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
                     </div>
 
                     <div style={fieldStyle}>
-                        <label className="label-field">Urgency <span style={{ fontWeight: 400, color: "var(--color-ink-muted-48)" }}>(Optional)</span></label>
-                        <select name="urgency" defaultValue="" className="select-field" style={{ fontSize: "15px" }}>
+                            <label className="label-field">Motivation</label>
+                            <select name="purchase_motivation" required defaultValue="" className="select-field" style={{ fontSize: "15px" }}>
+                                <option value="">Select…</option>
+                                <option value="replacement">Replacing Broken Item</option>
+                                <option value="upgrade">Upgrading Existing Item</option>
+                                <option value="productivity">Work / Productivity</option>
+                                <option value="hobby">Pure Hobby / Fun</option>
+                                <option value="flex">Status / Flex</option>
+                                <option value="impulse">Impulse / Boredom</option>
+                            </select>
+                        </div>
+
+                    <div style={fieldStyle}>
+                            <label className="label-field">Usage Frequency</label>
+                            <select name="usage_frequency" required defaultValue="" className="select-field" style={{ fontSize: "15px" }}>
+                                <option value="">Select…</option>
+                                <option value="daily">Every Day</option>
+                                <option value="weekly">Every Week</option>
+                                <option value="monthly">Every Month</option>
+                                <option value="rarely">Rarely / Special Occasion</option>
+                                <option value="one_time">One-Time Use</option>
+                            </select>
+                        </div>
+
+                    <div style={fieldStyle}>
+                        <label className="label-field">Urgency</label>
+                        <select name="urgency" required defaultValue="" className="select-field" style={{ fontSize: "15px" }}>
                             <option value="">Select…</option>
                             <option value="immediate_need">Immediate Need</option>
-                            <option value="can_wait">Can Wait</option>
+                            <option value="can_wait_weeks">Can Wait a Few Weeks</option>
+                            <option value="can_wait_months">Can Wait a Few Months</option>
                         </select>
                     </div>
 
