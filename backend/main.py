@@ -117,39 +117,49 @@ async def scrape_product(req: ScrapeRequest):
         
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         prompt = f"""
-        Extract the product name and map it to a category from this text.
+        Extract the product name and map it to a category based on this web page data.
+        If the Title/Description looks like an anti-bot page ("Access Denied", "Attention Required"), ignore it and try to extract the product name from the URL slug instead.
+        
         Categories: electronics, fashion, furniture, vehicle, hobby, entertainment, health_beauty, home, travel, education, other.
         Return ONLY valid JSON.
         Schema: {{"product_name": "string", "category": "string"}}
-        Text: {raw_text}
+        
+        URL: {req.url}
+        Title: {title}
+        Description: {desc_content}
         """
         
         ai_response = client.models.generate_content(
             model='gemini-flash-lite-latest',
             contents=prompt,
         )
-        cleaned_response = ai_response.text.strip().removeprefix("```json").removesuffix("```").strip()
-        result = json.loads(cleaned_response)
+        
+        # Robust JSON extraction
+        raw_text = ai_response.text.strip()
+        json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+        if not json_match:
+            raise ValueError("AI did not return valid JSON during scrape")
+        result = json.loads(json_match.group())
         
         extracted_name = result.get("product_name", "").strip()
         
-        # Anti-bot fallback: If title is generic "Shopee" or very short, try to extract from URL
-        if not extracted_name or ("shopee" in extracted_name.lower() and len(extracted_name) < 20):
+        # Anti-bot fallback: If title is generic or very short, try to extract from URL
+        bot_keywords = ["shopee", "tokopedia", "access denied", "attention required", "steampowered", "captcha"]
+        is_bot_blocked = any(k in extracted_name.lower() for k in bot_keywords) or len(extracted_name) < 4
+        
+        if not extracted_name or is_bot_blocked:
             try:
-                # e.g. https://shopee.co.id/Sony-Alpha-A7-Mark-III-Body-Only-Kamera-Mirrorless-i...
                 from urllib.parse import urlparse
                 path = urlparse(req.url).path
-                # get the first meaningful segment
                 segments = [s for s in path.split('/') if s]
                 if segments:
-                    slug = segments[0]
-                    if slug == "product" and len(segments) > 1:
-                        slug = segments[1]
-                    extracted_name = slug.replace("-", " ").title()
+                    # Usually the last or second to last segment contains the product name
+                    slug = segments[-1] if len(segments[-1]) > 5 else (segments[-2] if len(segments) > 1 else segments[0])
+                    extracted_name = slug.replace("-", " ").replace("_", " ").title()
                     result["product_name"] = extracted_name
                     result["category"] = "other" # Fallback category
             except:
-                raise ValueError("Anti-bot blocked content extraction and URL parsing failed")
+                pass # If parsing fails, just stick with whatever AI generated or empty
             
         return result
         
@@ -431,3 +441,23 @@ def analyze_purchase(req: AnalyzeRequest):
             # --- FIX #10: Sanitize error details ---
             print(f"Analyze Error: {repr(e)}")
             raise HTTPException(status_code=500, detail="Analysis failed. Please try again.")
+@app.get("/api/history/{user_id}")
+def get_user_history(user_id: str):
+    with Session(engine) as session:
+        user = session.query(UserProfile).filter(UserProfile.id == user_id).first()
+        if not user:
+            return []
+        records = session.query(AnalysisRecord).filter(AnalysisRecord.user_id == user.id).order_by(AnalysisRecord.created_at.desc()).all()
+        return [
+            {
+                "id": r.id,
+                "product_name": r.product_name,
+                "category": r.category,
+                "price": r.price,
+                "regret_score": r.regret_score,
+                "recommendation_action": r.recommendation_action,
+                "created_at": r.created_at.isoformat()
+            }
+            for r in records
+        ]
+

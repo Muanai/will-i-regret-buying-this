@@ -24,6 +24,21 @@ export default function Dashboard() {
   const [personality, setPersonality] = useState("mentor");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileFetching, setIsProfileFetching] = useState(true);
+  
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+
+  const fetchHistory = async () => {
+    if (!user?.id) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/history/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryData(data);
+      }
+    } catch (e) { console.error(e); }
+  };
 
   useEffect(() => {
     if (isSignedIn && user?.id) {
@@ -139,13 +154,25 @@ export default function Dashboard() {
         <span className="type-nav-link" style={{ color: "var(--color-body-muted)" }}>Will I Regret Buying This?</span>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {isProfileLocked && (
-            <button 
-                onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
-                className="type-nav-link" 
-                style={{ background: "none", border: "none", cursor: "pointer", color: isSettingsOpen ? "var(--color-primary)" : "var(--color-body-muted)" }}
-            >
-                Settings
-            </button>
+            <>
+              <button 
+                  onClick={() => {
+                      setIsHistoryOpen(true);
+                      fetchHistory();
+                  }}
+                  className="type-nav-link" 
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-body-muted)" }}
+              >
+                  History
+              </button>
+              <button 
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
+                  className="type-nav-link" 
+                  style={{ background: "none", border: "none", cursor: "pointer", color: isSettingsOpen ? "var(--color-primary)" : "var(--color-body-muted)" }}
+              >
+                  Settings
+              </button>
+            </>
           )}
           {user?.firstName && (
             <span className="type-nav-link" style={{ color: "var(--color-body-muted)" }}>{user.firstName}</span>
@@ -199,10 +226,10 @@ export default function Dashboard() {
         )}
 
         {/* 3-PANEL WORKSPACE */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden", gap: "1px", background: "var(--color-hairline)" }}>
+        <div className="layout-container">
 
           {/* LEFT SIDEBAR — Form (fixed 460px) */}
-          <div style={{ width: "460px", flexShrink: 0, background: "var(--color-canvas)", overflowY: "auto", padding: "28px 32px" }}>
+          <div className="sidebar-left">
             {isSettingsOpen ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
                   {/* Settings Header */}
@@ -272,21 +299,64 @@ export default function Dashboard() {
           </div>
 
           {/* RIGHT SIDEBAR — Verdict (slides in only when result exists) */}
-          <div style={{
+          <div className={`verdict-container ${analysisData ? 'has-analysis' : 'no-analysis'}`} style={{
             width: analysisData ? "420px" : "0px",
-            flexShrink: 0,
-            overflow: "hidden",
-            background: "var(--color-canvas)",
-            transition: "width 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
             borderLeft: analysisData ? "1px solid var(--color-hairline)" : "none"
           }}>
-            <div style={{ width: "420px", height: "100%", overflowY: "auto", padding: "24px 20px" }}>
+            <div className="verdict-inner">
               <AnalysisResult data={analysisData} onReset={resetAnalysis} />
             </div>
           </div>
 
         </div>
       </main>
+
+      {/* ── HISTORY MODAL ── */}
+      {isHistoryOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "600px", maxHeight: "80vh", background: "var(--color-canvas)", borderRadius: "20px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--color-surface-pearl)" }}>
+              <div>
+                <h2 className="type-display-md" style={{ fontSize: "24px", margin: 0, letterSpacing: "-0.5px" }}>Graveyard of Desires</h2>
+                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "4px 0 0" }}>A record of every purchase you've brought to the AI.</p>
+              </div>
+              <button onClick={() => setIsHistoryOpen(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-divider-soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "var(--color-ink-muted-48)" }}>&times;</button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
+              {historyData.length === 0 ? (
+                <div style={{ padding: "40px", textAlign: "center", color: "var(--color-ink-muted-48)" }}>
+                  <p className="type-caption">Your history is clean. No desires recorded yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "24px", paddingTop: "12px" }}>
+                  {historyData.map((item) => (
+                    <div key={item.id} style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}>{item.product_name}</span>
+                        <span style={{ fontSize: "13px", color: "var(--color-ink-muted-48)" }}>Rp {new Intl.NumberFormat("id-ID").format(item.price)} • {item.category.replace("_", " ")}</span>
+                        <span style={{ fontSize: "11px", color: "var(--color-ink-muted-48)", marginTop: "4px" }}>{new Date(item.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "24px", fontWeight: 700, fontFamily: '"SF Pro Display", sans-serif', color: item.regret_score <= 35 ? "#34c759" : item.regret_score <= 68 ? "#ff9f0a" : "#ff3b30", letterSpacing: "-1px" }}>{item.regret_score}</span>
+                          <span style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--color-ink-muted-48)", letterSpacing: "0.5px" }}>Regret<br/>Score</span>
+                        </div>
+                        <span style={{
+                          padding: "4px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase",
+                          background: item.recommendation_action === "Buy" ? "rgba(52, 199, 89, 0.10)" : item.recommendation_action === "Delay" ? "rgba(255, 159, 10, 0.10)" : "rgba(255, 59, 48, 0.10)",
+                          color: item.recommendation_action === "Buy" ? "#1a7a34" : item.recommendation_action === "Delay" ? "#9a6000" : "#c0392b"
+                        }}>
+                          {item.recommendation_action}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
