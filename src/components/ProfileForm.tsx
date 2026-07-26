@@ -83,7 +83,6 @@ export default function ProfileForm({
         <form onSubmit={handleSubmit} className="card-utility" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {/* Header */}
             <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--color-hairline)" }}>
-                <p className="type-caption" style={{ color: "var(--color-primary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>Step 1</p>
                 <h2 className="type-display-md" style={{ margin: "0 0 4px" }}>Financial Reality</h2>
                 <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Set once. Be brutally honest.</p>
             </div>

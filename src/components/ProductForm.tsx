@@ -10,7 +10,6 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
     const [productName, setProductName] = useState("");
     const [category, setCategory] = useState("");
     const [price, setPrice] = useState("");
-    const [personality, setPersonality] = useState("roaster");
 
     const formatIDR = (value: string) => {
         const raw = value.replace(/\D/g, "");
@@ -47,8 +46,7 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
             category: data.category, 
             price: parseNumber(price), 
             reason: data.reason || "", 
-            urgency: data.urgency || "",
-            personality: personality
+            urgency: data.urgency || ""
         });
     };
 
@@ -58,7 +56,6 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
         <div className="card-utility" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {/* Header */}
             <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--color-hairline)" }}>
-                <p className="type-caption" style={{ color: "var(--color-primary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>Step 2</p>
                 <h2 className="type-display-md" style={{ margin: "0 0 4px" }}>The Object of Desire</h2>
                 <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Paste the link, let the AI read it, then face the price.</p>
             </div>
@@ -135,36 +132,6 @@ export default function ProductForm({ onSubmitProduct }: { onSubmitProduct: (dat
                             <option value="immediate_need">Immediate Need</option>
                             <option value="can_wait">Can Wait</option>
                         </select>
-                    </div>
-
-                    <div style={fieldStyle}>
-                        <label className="label-field">Choose Your Oracle</label>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                            <div 
-                                onClick={() => setPersonality("mentor")}
-                                style={{
-                                    cursor: "pointer", padding: "16px", borderRadius: "var(--radius-md)",
-                                    border: personality === "mentor" ? "2px solid #34c759" : "1px solid var(--color-hairline)",
-                                    background: personality === "mentor" ? "rgba(52, 199, 89, 0.05)" : "transparent",
-                                    transition: "all 0.2s ease"
-                                }}
-                            >
-                                <h4 className="type-body" style={{ fontWeight: 600, color: personality === "mentor" ? "#34c759" : "var(--color-ink)", marginBottom: "4px" }}>The Mentor</h4>
-                                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Polite, educational, and guides you toward better habits.</p>
-                            </div>
-                            <div 
-                                onClick={() => setPersonality("roaster")}
-                                style={{
-                                    cursor: "pointer", padding: "16px", borderRadius: "var(--radius-md)",
-                                    border: personality === "roaster" ? "2px solid #ff3b30" : "1px solid var(--color-hairline)",
-                                    background: personality === "roaster" ? "rgba(255, 59, 48, 0.05)" : "transparent",
-                                    transition: "all 0.2s ease"
-                                }}
-                            >
-                                <h4 className="type-body" style={{ fontWeight: 600, color: personality === "roaster" ? "#ff3b30" : "var(--color-ink)", marginBottom: "4px" }}>The Roaster</h4>
-                                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Ruthless, sarcastic, and destroys financial delusions.</p>
-                            </div>
-                        </div>
                     </div>
 
                     <button type="submit" className="btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "4px" }}>

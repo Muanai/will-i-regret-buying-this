@@ -21,18 +21,24 @@ export default function Dashboard() {
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState("");
+  const [personality, setPersonality] = useState("mentor");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileFetching, setIsProfileFetching] = useState(true);
 
   useEffect(() => {
     if (isSignedIn && user?.id) {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       fetch(`${API_URL}/api/profile/${user.id}`)
         .then(res => { if (res.ok) return res.json(); throw new Error("Not found"); })
-        .then(data => setExistingProfile(data))
-        .catch(() => {});
+        .then(data => { setExistingProfile(data); setIsProfileLocked(true); })
+        .catch(() => {})
+        .finally(() => setIsProfileFetching(false));
+    } else if (isLoaded) {
+      setIsProfileFetching(false);
     }
-  }, [isSignedIn, user?.id]);
+  }, [isLoaded, isSignedIn, user?.id]);
 
-  if (!isLoaded) {
+  if (!isLoaded || isProfileFetching) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-canvas-parchment)" }}>
         <p style={{ color: "var(--color-ink-muted-48)", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading…</p>
@@ -70,7 +76,7 @@ export default function Dashboard() {
     setIsAnalyzing(true);
     setError("");
     try {
-      const payload = { ...product, user_id: user.id, chat_history: history };
+      const payload = { ...product, user_id: user.id, chat_history: history, personality };
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error("Failed");
@@ -100,6 +106,15 @@ export default function Dashboard() {
       <nav className="nav-global">
         <span className="type-nav-link" style={{ color: "var(--color-body-muted)" }}>Will I Regret Buying This?</span>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {isProfileLocked && (
+            <button 
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
+                className="type-nav-link" 
+                style={{ background: "none", border: "none", cursor: "pointer", color: isSettingsOpen ? "var(--color-primary)" : "var(--color-body-muted)" }}
+            >
+                Settings
+            </button>
+          )}
           {user?.firstName && (
             <span className="type-nav-link" style={{ color: "var(--color-body-muted)" }}>{user.firstName}</span>
           )}
@@ -156,7 +171,40 @@ export default function Dashboard() {
 
           {/* LEFT SIDEBAR — Form (fixed 460px) */}
           <div style={{ width: "460px", flexShrink: 0, background: "var(--color-canvas)", overflowY: "auto", padding: "28px 32px" }}>
-            {!isProfileLocked ? (
+            {isSettingsOpen ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <div className="card-utility" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        <label className="label-field">Choose Your Oracle</label>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                            <div 
+                                onClick={() => setPersonality("mentor")}
+                                style={{
+                                    cursor: "pointer", padding: "16px", borderRadius: "var(--radius-md)",
+                                    border: personality === "mentor" ? "2px solid #34c759" : "1px solid var(--color-hairline)",
+                                    background: personality === "mentor" ? "rgba(52, 199, 89, 0.05)" : "transparent",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                <h4 className="type-body" style={{ fontWeight: 600, color: personality === "mentor" ? "#34c759" : "var(--color-ink)", marginBottom: "4px" }}>The Mentor</h4>
+                                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Polite, educational, and guides you toward better habits.</p>
+                            </div>
+                            <div 
+                                onClick={() => setPersonality("roaster")}
+                                style={{
+                                    cursor: "pointer", padding: "16px", borderRadius: "var(--radius-md)",
+                                    border: personality === "roaster" ? "2px solid #ff3b30" : "1px solid var(--color-hairline)",
+                                    background: personality === "roaster" ? "rgba(255, 59, 48, 0.05)" : "transparent",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                <h4 className="type-body" style={{ fontWeight: 600, color: personality === "roaster" ? "#ff3b30" : "var(--color-ink)", marginBottom: "4px" }}>The Roaster</h4>
+                                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)" }}>Ruthless, sarcastic, and destroys financial delusions.</p>
+                            </div>
+                        </div>
+                  </div>
+                  <ProfileForm onComplete={async (data) => { await handleProfileSubmit(data); setIsSettingsOpen(false); }} initialData={existingProfile} />
+              </div>
+            ) : !isProfileLocked ? (
               <ProfileForm onComplete={handleProfileSubmit} initialData={existingProfile} />
             ) : (
               <ProductForm onSubmitProduct={handleProductSubmit} />
