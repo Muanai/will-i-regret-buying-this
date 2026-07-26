@@ -80,9 +80,11 @@ export default function Dashboard() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isWaitingRoomOpen, setIsWaitingRoomOpen] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   const fetchHistory = async () => {
     if (!user?.id) return;
+    setIsHistoryLoading(true);
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const res = await fetch(`${API_URL}/api/history/${user.id}`);
@@ -91,6 +93,7 @@ export default function Dashboard() {
         setHistoryData(data);
       }
     } catch (e) { console.error(e); }
+    finally { setIsHistoryLoading(false); }
   };
 
   const deleteHistoryRecord = async (recordId: string) => {
@@ -358,7 +361,16 @@ export default function Dashboard() {
             </div>
             {/* Modal Body */}
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 28px 28px" }}>
-              {historyData.length === 0 ? (
+              {isHistoryLoading ? (
+                <div style={{ padding: "48px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <div className="dot-pulse" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--color-ink-muted-48)" }} />
+                    <div className="dot-pulse-2" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--color-ink-muted-48)" }} />
+                    <div className="dot-pulse-3" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--color-ink-muted-48)" }} />
+                  </div>
+                  <p style={{ fontSize: "13px", color: "var(--color-ink-muted-48)", margin: 0, letterSpacing: "-0.12px" }}>Retrieving records…</p>
+                </div>
+              ) : historyData.length === 0 ? (
                 <div style={{ padding: "48px 0", textAlign: "center" }}>
                   <p style={{ fontSize: "14px", color: "var(--color-ink-muted-48)", margin: 0 }}>Your history is clean. No desires on record.</p>
                 </div>
@@ -420,7 +432,16 @@ export default function Dashboard() {
             </div>
             {/* Modal Body */}
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 28px 28px" }}>
-              {historyData.filter(d => d.recommendation_action === 'Delay').length === 0 ? (
+              {isHistoryLoading ? (
+                <div style={{ padding: "48px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <div className="dot-pulse" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ff9f0a", opacity: 0.6 }} />
+                    <div className="dot-pulse-2" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ff9f0a", opacity: 0.6 }} />
+                    <div className="dot-pulse-3" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ff9f0a", opacity: 0.6 }} />
+                  </div>
+                  <p style={{ fontSize: "13px", color: "var(--color-ink-muted-48)", margin: 0, letterSpacing: "-0.12px" }}>Checking the waiting room…</p>
+                </div>
+              ) : historyData.filter(d => d.recommendation_action === 'Delay').length === 0 ? (
                 <div style={{ padding: "48px 0", textAlign: "center" }}>
                   <p style={{ fontSize: "14px", color: "var(--color-ink-muted-48)", margin: 0 }}>Waiting room is empty. No active cooling periods.</p>
                 </div>
@@ -453,20 +474,27 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
       {/* ── SETTINGS MODAL ── */}
       {isSettingsOpen && isProfileLocked && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "500px", maxHeight: "85vh", background: "var(--color-canvas)", borderRadius: "20px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--color-surface-pearl)" }}>
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        >
+          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "500px", maxHeight: "85vh", background: "var(--color-canvas)", borderRadius: "var(--radius-lg)", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 32px 64px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.08)" }}>
+            {/* Modal Header */}
+            <div style={{ padding: "24px 28px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--color-hairline)" }}>
               <div>
-                <h2 className="type-display-md" style={{ fontSize: "24px", margin: 0, letterSpacing: "-0.5px" }}>Settings</h2>
-                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "4px 0 0" }}>Adjust the AI and update your financial profile.</p>
+                <p style={{ margin: "0 0 2px", fontSize: "11px", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", color: "var(--color-primary)" }}>Preferences</p>
+                <h2 style={{ margin: 0, fontSize: "28px", fontWeight: 600, letterSpacing: "-0.5px", color: "var(--color-ink)", fontFamily: '"SF Pro Display", system-ui, sans-serif', lineHeight: 1.1 }}>Settings</h2>
+                <p style={{ margin: "6px 0 0", fontSize: "14px", color: "var(--color-ink-muted-48)", letterSpacing: "-0.12px" }}>Adjust the AI and update your financial profile.</p>
               </div>
-              <button onClick={() => setIsSettingsOpen(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-divider-soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "var(--color-ink-muted-48)", transition: "background 0.15s ease" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "var(--color-hairline)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "var(--color-divider-soft)")}>
-                  &times;
-              </button>
+              <button
+                onClick={() => setIsSettingsOpen(false)}
+                style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-canvas-parchment)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-ink-muted-48)", flexShrink: 0, fontSize: "18px", lineHeight: 1, marginLeft: "16px", transition: "background 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--color-hairline)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "var(--color-canvas-parchment)")}
+              >&times;</button>
             </div>
             
             <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
