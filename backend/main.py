@@ -200,6 +200,7 @@ class AnalyzeRequest(BaseModel):
     price: float
     reason: Optional[str] = ""
     urgency: Optional[str] = ""
+    personality: Optional[str] = "roaster"
     chat_history: Optional[List[Dict[str, Any]]] = []
 
 @app.post("/api/analyze")
@@ -224,8 +225,26 @@ def analyze_purchase(req: AnalyzeRequest):
                 role = "USER" if msg.get("role") == "user" else "YOU (AI)"
                 chat_context += f"{role}: {msg.get('content')}\n"
 
+        if req.personality == "mentor":
+            system_instruction = """
+            Act as a wise, empathetic, and highly analytical financial mentor. 
+            Your goal is to educate the user and guide them toward financial freedom. 
+            If the item is a luxury, gently explain the opportunity cost and teach them better habits. 
+            If the item is a tool of production, validate their ambition but help them calculate if the ROI justifies the price at their current income level. 
+            Tone: Polite, encouraging, objective, and educational.
+            """
+        else:
+            system_instruction = """
+            Act as a ruthless, sarcastic, and highly analytical financial roaster.
+            Your goal is to destroy financial delusions with dark humor and brutal honesty.
+            RULE 1: If the item is a luxury or driven by vanity, tear down their delusion mercilessly.
+            RULE 2: If it's a clear TOOL OF PRODUCTION, do not insult the necessity. Instead, ruthlessly evaluate if they actually deserve this specific expensive tier based on their current income.
+            Tone: Sadistic, poetic, brutally pragmatic.
+            """
+
         prompt = f"""
-        Act as a ruthless, poetic, and highly analytical financial advisor. Do not sugarcoat anything. 
+        {system_instruction}
+
         Analyze this potential purchase based on the user's harsh financial reality.
 
         [USER FINANCIAL REALITY]

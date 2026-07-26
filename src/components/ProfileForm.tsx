@@ -6,7 +6,7 @@ export default function ProfileForm({
     onComplete,
     initialData
 }: {
-    onComplete: (data: any) => void;
+    onComplete: (data: any) => void | Promise<void>;
     initialData?: any;
 }) {
     const formatIDR = (value: string | number) => {
@@ -19,6 +19,7 @@ export default function ProfileForm({
     const [income, setIncome] = useState(initialData?.monthly_income !== undefined ? formatIDR(initialData.monthly_income) : "");
     const [expense, setExpense] = useState(initialData?.monthly_expense !== undefined ? formatIDR(initialData.monthly_expense) : "");
     const [savings, setSavings] = useState(initialData?.current_savings !== undefined ? formatIDR(initialData.current_savings) : "");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (initialData) {
@@ -47,25 +48,30 @@ export default function ProfileForm({
         setter(formatIDR(e.target.value));
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const data = Object.fromEntries(formData.entries());
+        setIsSubmitting(true);
+        try {
+            const formData = new FormData(e.currentTarget);
+            const data = Object.fromEntries(formData.entries());
 
-        const parseNumber = (val: string) => parseInt(val.replace(/\D/g, "") || "0", 10);
+            const parseNumber = (val: string) => parseInt(val.replace(/\D/g, "") || "0", 10);
 
-        const payload = {
-            name: data.name,
-            age: parseInt(data.age as string, 10),
-            occupation_status: data.occupation_status,
-            monthly_income: parseNumber(income),
-            monthly_expense: parseNumber(expense),
-            current_savings: parseNumber(savings),
-            financial_goal: data.financial_goal,
-            risk_tolerance: data.risk_tolerance || "medium",
-        };
+            const payload = {
+                name: data.name,
+                age: parseInt(data.age as string, 10),
+                occupation_status: data.occupation_status,
+                monthly_income: parseNumber(income),
+                monthly_expense: parseNumber(expense),
+                current_savings: parseNumber(savings),
+                financial_goal: data.financial_goal,
+                risk_tolerance: data.risk_tolerance || "medium",
+            };
 
-        onComplete(payload);
+            await onComplete(payload);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const fieldStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "6px" };
@@ -170,8 +176,8 @@ export default function ProfileForm({
                         Dummy Data
                     </button>
                 )}
-                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: "center" }}>
-                    {initialData ? "Update Profile" : "Lock Profile →"}
+                <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ flex: 1, justifyContent: "center", opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? "not-allowed" : "pointer" }}>
+                    {isSubmitting ? "Saving..." : (initialData ? "Update Profile" : "Lock Profile →")}
                 </button>
             </div>
         </form>
