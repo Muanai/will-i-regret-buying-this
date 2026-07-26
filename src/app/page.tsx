@@ -337,49 +337,59 @@ export default function Dashboard() {
 
       {/* ── HISTORY MODAL ── */}
       {isHistoryOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "600px", maxHeight: "80vh", background: "var(--color-canvas)", borderRadius: "20px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--color-surface-pearl)" }}>
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setIsHistoryOpen(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        >
+          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "600px", maxHeight: "82vh", background: "var(--color-canvas)", borderRadius: "var(--radius-lg)", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 32px 64px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.08)" }}>
+            {/* Modal Header */}
+            <div style={{ padding: "24px 28px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--color-hairline)" }}>
               <div>
-                <h2 className="type-display-md" style={{ fontSize: "24px", margin: 0, letterSpacing: "-0.5px" }}>Graveyard of Desires</h2>
-                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "4px 0 0" }}>A record of every purchase you've brought to the AI.</p>
+                <p style={{ margin: "0 0 2px", fontSize: "11px", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", color: "var(--color-primary)" }}>History</p>
+                <h2 style={{ margin: 0, fontSize: "28px", fontWeight: 600, letterSpacing: "-0.5px", color: "var(--color-ink)", fontFamily: '"SF Pro Display", system-ui, sans-serif', lineHeight: 1.1 }}>Graveyard of Desires</h2>
+                <p style={{ margin: "6px 0 0", fontSize: "14px", color: "var(--color-ink-muted-48)", letterSpacing: "-0.12px" }}>Every purchase you've brought to judgment.</p>
               </div>
-              <button onClick={() => setIsHistoryOpen(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-divider-soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "var(--color-ink-muted-48)" }}>&times;</button>
+              <button
+                onClick={() => setIsHistoryOpen(false)}
+                style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-canvas-parchment)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-ink-muted-48)", flexShrink: 0, fontSize: "18px", lineHeight: 1, marginLeft: "16px", transition: "background 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--color-hairline)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "var(--color-canvas-parchment)")}
+              >&times;</button>
             </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
+            {/* Modal Body */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 28px 28px" }}>
               {historyData.length === 0 ? (
-                <div style={{ padding: "40px", textAlign: "center", color: "var(--color-ink-muted-48)" }}>
-                  <p className="type-caption">Your history is clean. No desires recorded yet.</p>
+                <div style={{ padding: "48px 0", textAlign: "center" }}>
+                  <p style={{ fontSize: "14px", color: "var(--color-ink-muted-48)", margin: 0 }}>Your history is clean. No desires on record.</p>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "24px", paddingTop: "12px" }}>
-                  {historyData.map((item) => (
-                    <div key={item.id} style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}>{item.product_name}</span>
-                          <button onClick={() => deleteHistoryRecord(item.id)} title="Delete record" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-ink-muted-48)", padding: 0, display: "flex", alignItems: "center", transition: "color 0.15s" }} onMouseEnter={e => e.currentTarget.style.color = "#ff3b30"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-ink-muted-48)"}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                          </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "4px" }}>
+                  {historyData.map((item) => {
+                    const scoreColor = item.regret_score <= 35 ? "#34c759" : item.regret_score <= 68 ? "#ff9f0a" : "#ff3b30";
+                    const actionBg = item.recommendation_action === "Buy" ? "rgba(52,199,89,0.10)" : item.recommendation_action === "Delay" ? "rgba(255,159,10,0.10)" : "rgba(255,59,48,0.10)";
+                    const actionColor = item.recommendation_action === "Buy" ? "#1a7a34" : item.recommendation_action === "Delay" ? "#9a6000" : "#c0392b";
+                    return (
+                      <div key={item.id} style={{ padding: "16px 18px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-hairline)", background: "var(--color-canvas)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", transition: "border-color 0.15s" }}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--color-ink-muted-48)")}
+                        onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--color-hairline)")}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-ink)", letterSpacing: "-0.2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.product_name}</span>
+                            <button onClick={() => deleteHistoryRecord(item.id)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-ink-muted-48)", padding: "2px", display: "flex", alignItems: "center", transition: "color 0.15s", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.color = "#ff3b30"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-ink-muted-48)"}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                          </div>
+                          <span style={{ fontSize: "13px", color: "var(--color-ink-muted-48)", letterSpacing: "-0.12px" }}>Rp {new Intl.NumberFormat("id-ID").format(item.price)} · {item.category.replace("_", " ")}</span>
+                          <span style={{ display: "block", fontSize: "11px", color: "var(--color-ink-muted-48)", marginTop: "2px", letterSpacing: "0" }}>{new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
                         </div>
-                        <span style={{ fontSize: "13px", color: "var(--color-ink-muted-48)" }}>Rp {new Intl.NumberFormat("id-ID").format(item.price)} • {item.category.replace("_", " ")}</span>
-                        <span style={{ fontSize: "11px", color: "var(--color-ink-muted-48)", marginTop: "4px" }}>{new Date(item.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ fontSize: "24px", fontWeight: 700, fontFamily: '"SF Pro Display", sans-serif', color: item.regret_score <= 35 ? "#34c759" : item.regret_score <= 68 ? "#ff9f0a" : "#ff3b30", letterSpacing: "-1px" }}>{item.regret_score}</span>
-                          <span style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--color-ink-muted-48)", letterSpacing: "0.5px" }}>Regret<br/>Score</span>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                          <span style={{ fontSize: "26px", fontWeight: 700, fontFamily: '"SF Pro Display", sans-serif', color: scoreColor, letterSpacing: "-1px", lineHeight: 1 }}>{item.regret_score}</span>
+                          <span style={{ padding: "3px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.3px", textTransform: "uppercase", background: actionBg, color: actionColor }}>{item.recommendation_action}</span>
                         </div>
-                        <span style={{
-                          padding: "4px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase",
-                          background: item.recommendation_action === "Buy" ? "rgba(52, 199, 89, 0.10)" : item.recommendation_action === "Delay" ? "rgba(255, 159, 10, 0.10)" : "rgba(255, 59, 48, 0.10)",
-                          color: item.recommendation_action === "Buy" ? "#1a7a34" : item.recommendation_action === "Delay" ? "#9a6000" : "#c0392b"
-                        }}>
-                          {item.recommendation_action}
-                        </span>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -389,38 +399,52 @@ export default function Dashboard() {
 
       {/* ── WAITING ROOM MODAL ── */}
       {isWaitingRoomOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "600px", maxHeight: "80vh", background: "var(--color-canvas)", borderRadius: "20px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.2)", border: "1px solid rgba(255,159,10,0.3)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,159,10,0.05)" }}>
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setIsWaitingRoomOpen(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        >
+          <div className="animate-fade-up" style={{ width: "90%", maxWidth: "600px", maxHeight: "82vh", background: "var(--color-canvas)", borderRadius: "var(--radius-lg)", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 32px 64px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.08)" }}>
+            {/* Modal Header */}
+            <div style={{ padding: "24px 28px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--color-hairline)" }}>
               <div>
-                <h2 className="type-display-md" style={{ fontSize: "24px", margin: 0, letterSpacing: "-0.5px", color: "#ff9f0a", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  The Waiting Room
-                </h2>
-                <p className="type-caption" style={{ color: "var(--color-ink-muted-48)", margin: "4px 0 0" }}>Impulse purchases locked for 7 days cooling-off period.</p>
+                <p style={{ margin: "0 0 2px", fontSize: "11px", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", color: "#ff9f0a" }}>7-Day Cooling Period</p>
+                <h2 style={{ margin: 0, fontSize: "28px", fontWeight: 600, letterSpacing: "-0.5px", color: "var(--color-ink)", fontFamily: '"SF Pro Display", system-ui, sans-serif', lineHeight: 1.1 }}>The Waiting Room</h2>
+                <p style={{ margin: "6px 0 0", fontSize: "14px", color: "var(--color-ink-muted-48)", letterSpacing: "-0.12px" }}>Locked until impulse becomes intention.</p>
               </div>
-              <button onClick={() => setIsWaitingRoomOpen(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-divider-soft)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "var(--color-ink-muted-48)" }}>&times;</button>
+              <button
+                onClick={() => setIsWaitingRoomOpen(false)}
+                style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-canvas-parchment)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-ink-muted-48)", flexShrink: 0, fontSize: "18px", lineHeight: 1, marginLeft: "16px", transition: "background 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--color-hairline)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "var(--color-canvas-parchment)")}
+              >&times;</button>
             </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
+            {/* Modal Body */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 28px 28px" }}>
               {historyData.filter(d => d.recommendation_action === 'Delay').length === 0 ? (
-                <div style={{ padding: "40px", textAlign: "center", color: "var(--color-ink-muted-48)" }}>
-                  <p className="type-caption">Your waiting room is empty. No active cooling periods.</p>
+                <div style={{ padding: "48px 0", textAlign: "center" }}>
+                  <p style={{ fontSize: "14px", color: "var(--color-ink-muted-48)", margin: 0 }}>Waiting room is empty. No active cooling periods.</p>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "24px", paddingTop: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "4px" }}>
                   {historyData.filter(d => d.recommendation_action === 'Delay').map((item) => (
-                    <div key={item.id} style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--color-hairline)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--color-surface-pearl)" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}>{item.product_name}</span>
-                          <button onClick={() => deleteHistoryRecord(item.id)} title="Delete record" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-ink-muted-48)", padding: 0, display: "flex", alignItems: "center", transition: "color 0.15s" }} onMouseEnter={e => e.currentTarget.style.color = "#ff3b30"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-ink-muted-48)"}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <div key={item.id}
+                      style={{ padding: "18px 20px", borderRadius: "var(--radius-md)", border: "1px solid rgba(255,159,10,0.25)", background: "rgba(255,159,10,0.03)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", transition: "border-color 0.15s, background 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,159,10,0.5)"; e.currentTarget.style.background = "rgba(255,159,10,0.06)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,159,10,0.25)"; e.currentTarget.style.background = "rgba(255,159,10,0.03)"; }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-ink)", letterSpacing: "-0.2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.product_name}</span>
+                          <button onClick={() => deleteHistoryRecord(item.id)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-ink-muted-48)", padding: "2px", display: "flex", alignItems: "center", transition: "color 0.15s", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.color = "#ff3b30"} onMouseLeave={e => e.currentTarget.style.color = "var(--color-ink-muted-48)"}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                           </button>
                         </div>
-                        <span style={{ fontSize: "13px", color: "var(--color-ink-muted-48)" }}>Rp {new Intl.NumberFormat("id-ID").format(item.price)} • {item.category.replace("_", " ")}</span>
-                        <span style={{ fontSize: "11px", color: "var(--color-ink-muted-48)", marginTop: "4px" }}>Locked on: {new Date(item.created_at).toLocaleDateString()}</span>
+                        <span style={{ fontSize: "13px", color: "var(--color-ink-muted-48)", letterSpacing: "-0.12px" }}>Rp {new Intl.NumberFormat("id-ID").format(item.price)} · {item.category.replace("_", " ")}</span>
+                        <span style={{ display: "block", fontSize: "11px", color: "var(--color-ink-muted-48)", marginTop: "2px" }}>Locked: {new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
                       </div>
-                      <CountdownTimer createdAt={item.created_at} />
+                      <div style={{ flexShrink: 0 }}>
+                        <CountdownTimer createdAt={item.created_at} />
+                      </div>
                     </div>
                   ))}
                 </div>
