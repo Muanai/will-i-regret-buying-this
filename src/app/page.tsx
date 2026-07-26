@@ -154,8 +154,8 @@ export default function Dashboard() {
         {/* 3-PANEL WORKSPACE */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden", gap: "1px", background: "var(--color-hairline)" }}>
 
-          {/* LEFT SIDEBAR — Form (fixed 380px) */}
-          <div style={{ width: "380px", flexShrink: 0, background: "var(--color-canvas)", overflowY: "auto", padding: "28px 28px" }}>
+          {/* LEFT SIDEBAR — Form (fixed 460px) */}
+          <div style={{ width: "460px", flexShrink: 0, background: "var(--color-canvas)", overflowY: "auto", padding: "28px 32px" }}>
             {!isProfileLocked ? (
               <ProfileForm onComplete={handleProfileSubmit} initialData={existingProfile} />
             ) : (

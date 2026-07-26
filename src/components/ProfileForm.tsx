@@ -18,14 +18,16 @@ export default function ProfileForm({
 
     const [income, setIncome] = useState(initialData?.monthly_income !== undefined ? formatIDR(initialData.monthly_income) : "");
     const [expense, setExpense] = useState(initialData?.monthly_expense !== undefined ? formatIDR(initialData.monthly_expense) : "");
-    const [savings, setSavings] = useState(initialData?.current_savings !== undefined ? formatIDR(initialData.current_savings) : "");
+    const [cashOnHand, setCashOnHand] = useState(initialData?.cash_on_hand !== undefined ? formatIDR(initialData.cash_on_hand) : "");
+    const [investedAmount, setInvestedAmount] = useState(initialData?.invested_amount !== undefined ? formatIDR(initialData.invested_amount) : "");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (initialData) {
             setIncome(formatIDR(initialData.monthly_income));
             setExpense(formatIDR(initialData.monthly_expense));
-            setSavings(formatIDR(initialData.current_savings));
+            setCashOnHand(formatIDR(initialData.cash_on_hand));
+            setInvestedAmount(formatIDR(initialData.invested_amount));
             // Uncontrolled inputs update
             const form = document.querySelector('form') as HTMLFormElement;
             if (form) {
@@ -63,7 +65,8 @@ export default function ProfileForm({
                 occupation_status: data.occupation_status,
                 monthly_income: parseNumber(income),
                 monthly_expense: parseNumber(expense),
-                current_savings: parseNumber(savings),
+                cash_on_hand: parseNumber(cashOnHand),
+                invested_amount: parseNumber(investedAmount),
                 financial_goal: data.financial_goal,
                 risk_tolerance: data.risk_tolerance || "medium",
             };
@@ -127,14 +130,22 @@ export default function ProfileForm({
                 </div>
             </div>
 
-            {/* Savings */}
-            <div style={fieldStyle}>
-                <label className="label-field">Current Savings (IDR)</label>
-                <div style={{ position: "relative" }}>
-                    <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--color-ink-muted-48)", fontSize: "15px", pointerEvents: "none" }}>Rp</span>
-                    <input type="text" value={savings} onChange={e => handleCurrencyChange(e, setSavings)} className="input-field" style={{ paddingLeft: "40px", fontSize: "15px" }} />
+            {/* Assets */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={fieldStyle}>
+                    <label className="label-field">Liquid Cash (IDR)</label>
+                    <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--color-ink-muted-48)", fontSize: "15px", pointerEvents: "none" }}>Rp</span>
+                        <input type="text" value={cashOnHand} onChange={e => handleCurrencyChange(e, setCashOnHand)} className="input-field" style={{ paddingLeft: "40px", fontSize: "15px" }} />
+                    </div>
                 </div>
-                {!savings && <p className="type-caption" style={{ color: "#e65100" }}>Defaults to 0. Analysis will be less accurate.</p>}
+                <div style={fieldStyle}>
+                    <label className="label-field">Invested Assets (IDR)</label>
+                    <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--color-ink-muted-48)", fontSize: "15px", pointerEvents: "none" }}>Rp</span>
+                        <input type="text" value={investedAmount} onChange={e => handleCurrencyChange(e, setInvestedAmount)} className="input-field" style={{ paddingLeft: "40px", fontSize: "15px" }} />
+                    </div>
+                </div>
             </div>
 
             {/* Financial Goal */}
@@ -164,7 +175,7 @@ export default function ProfileForm({
             <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
                 {!initialData && (
                     <button type="button" onClick={() => {
-                        setIncome(formatIDR(15000000)); setExpense(formatIDR(5000000)); setSavings(formatIDR(20000000));
+                        setIncome(formatIDR(15000000)); setExpense(formatIDR(5000000)); setCashOnHand(formatIDR(4000000)); setInvestedAmount(formatIDR(16000000));
                         const form = document.querySelector('form') as HTMLFormElement;
                         if (form) {
                             (form.elements.namedItem('name') as HTMLInputElement).value = "Test User";
