@@ -136,17 +136,44 @@ export default function AnalysisResult({ data, onReset }: { data: AnalysisData |
     <div className="verdict-panel animate-fade-up" style={{ display: "flex", flexDirection: "column", gap: 0, height: "100%", overflowY: "auto", overflowX: "hidden" }}>
 
       {/* ── HEADER ── */}
-      <div style={{ padding: "28px 28px 20px", borderBottom: "1px solid var(--color-divider-soft)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+      <div style={{ padding: "24px 24px 20px", borderBottom: "1px solid var(--color-divider-soft)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <SectionLabel>Oracle's Judgment</SectionLabel>
           <ActionChip action={data.recommendation_action || "Drop"} />
         </div>
         <button
           onClick={onReset}
-          style={{ flexShrink: 0, width: "30px", height: "30px", borderRadius: "50%", background: "var(--color-divider-soft)", border: "none", cursor: "pointer", fontSize: "16px", color: "var(--color-ink-muted-48)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}
-          onMouseEnter={e => (e.currentTarget.style.background = "var(--color-hairline)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "var(--color-divider-soft)")}
-        >&times;</button>
+          title="Reset and analyze a new product"
+          style={{
+            flexShrink: 0,
+            display: "inline-flex", alignItems: "center", gap: "5px",
+            padding: "6px 12px",
+            borderRadius: "9999px",
+            background: "var(--color-canvas-parchment)",
+            border: "1px solid var(--color-hairline)",
+            cursor: "pointer",
+            fontSize: "12px", fontWeight: 600,
+            color: "var(--color-ink-muted-48)",
+            letterSpacing: "0.1px",
+            transition: "background 0.15s, color 0.15s, border-color 0.15s"
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "#fff0f0";
+            e.currentTarget.style.color = "#c0392b";
+            e.currentTarget.style.borderColor = "rgba(192,57,43,0.25)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = "var(--color-canvas-parchment)";
+            e.currentTarget.style.color = "var(--color-ink-muted-48)";
+            e.currentTarget.style.borderColor = "var(--color-hairline)";
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+          Start Over
+        </button>
       </div>
 
       {/* ── GAUGE BLOCK ── */}
@@ -156,19 +183,29 @@ export default function AnalysisResult({ data, onReset }: { data: AnalysisData |
 
       {/* ── QUICK STATS ── */}
       {data.quick_stats && data.quick_stats.length > 0 && (
-        <div style={{ padding: "20px 28px", borderBottom: "1px solid var(--color-divider-soft)" }}>
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-divider-soft)", display: "flex", flexDirection: "column", gap: "10px" }}>
           <SectionLabel>Quick Numbers</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(data.quick_stats.length, 3)}, 1fr)`, gap: "10px" }}>
-            {data.quick_stats.map((stat, i) => (
-              <div key={i} style={{
-                background: "var(--color-canvas-parchment)", padding: "12px 10px", borderRadius: "12px",
-                display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "3px"
-              }}>
-                <span style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "-0.5px", color: "var(--color-ink)", fontFamily: '"SF Pro Display", system-ui, sans-serif' }}>{stat.value}</span>
-                <span style={{ fontSize: "10px", fontWeight: 500, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--color-ink-muted-48)" }}>{stat.label}</span>
-              </div>
-            ))}
-          </div>
+          {data.quick_stats.map((stat, i) => (
+            <div key={i} style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              background: "var(--color-canvas-parchment)",
+              border: "1px solid transparent",
+            }}>
+              <span style={{
+                fontSize: "13px", fontWeight: 500, letterSpacing: "-0.1px",
+                color: "var(--color-ink-muted-48)"
+              }}>{stat.label}</span>
+              <span style={{
+                fontSize: "15px", fontWeight: 700, letterSpacing: "-0.4px",
+                color: "var(--color-ink)",
+                fontFamily: '"SF Pro Display", system-ui, sans-serif'
+              }}>{stat.value}</span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -200,6 +237,36 @@ export default function AnalysisResult({ data, onReset }: { data: AnalysisData |
       <div style={{ margin: "0 28px 28px", borderRadius: "14px", border: "1px solid rgba(0,102,204,0.15)", background: "rgba(0,102,204,0.04)", padding: "20px" }}>
         <SectionLabel><span style={{ color: "var(--color-primary)" }}>Smarter Alternative</span></SectionLabel>
         <p style={{ margin: 0, fontSize: "14px", lineHeight: 1.65, letterSpacing: "-0.2px", color: "var(--color-primary)", opacity: 0.9 }}>{data.recommendation_alternative}</p>
+      </div>
+
+      {/* ── SHARE BUTTON ── */}
+      <div style={{ padding: "0 28px 32px", display: "flex", justifyContent: "center" }}>
+        <button
+          onClick={() => {
+            const text = `The AI just roasted my purchase idea.\n\nRegret Score: ${data.regret_score}/100\nVerdict: ${data.recommendation_action}\n\n"${data.purchase_summary}"\n\n- Will I Regret Buying This?`;
+            navigator.clipboard.writeText(text);
+            alert("Verdict copied to clipboard! Share it with the world.");
+          }}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "8px",
+            padding: "10px 24px", borderRadius: "9999px",
+            background: "var(--color-ink)", color: "var(--color-canvas)",
+            border: "none", cursor: "pointer",
+            fontSize: "14px", fontWeight: 600, letterSpacing: "0.2px",
+            transition: "transform 0.15s ease, background 0.15s ease"
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "#000"}
+          onMouseLeave={e => e.currentTarget.style.background = "var(--color-ink)"}
+          onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+          onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+          Share Verdict
+        </button>
       </div>
 
     </div>
